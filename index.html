@@ -35,162 +35,71 @@
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .container { max-width: 430px; margin: 0 auto; padding: 20px 16px 40px; }
-
   h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
   h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
   .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 14px;
-  }
-
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
   .label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
-
   input[type=number], input[type=date] {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 16px;
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
-    font-family: inherit;
-    -webkit-appearance: none;
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 16px; background: var(--bg);
+    color: var(--text); outline: none; font-family: inherit; -webkit-appearance: none;
   }
-  input[type=number]:focus, input[type=date]:focus {
-    border-color: var(--accent-mid);
-  }
-
+  input[type=number]:focus, input[type=date]:focus { border-color: var(--accent-mid); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .field { margin-bottom: 12px; }
-
   button {
-    display: block;
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 16px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: opacity 0.15s;
+    display: block; width: 100%; padding: 14px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-sm); font-size: 16px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: opacity 0.15s;
   }
   button:active { opacity: 0.8; }
-  button.secondary {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    font-weight: 400;
-    font-size: 14px;
-    padding: 10px;
-  }
 
   .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .metric {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 10px;
-    text-align: center;
-  }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; }
   .metric .val { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .metric .val.done { font-size: 28px; color: var(--accent-mid); }
   .metric .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  .progress-wrap { margin-bottom: 4px; }
   .progress-bg { background: var(--bg); border-radius: 99px; height: 8px; overflow: hidden; }
   .progress-fill { height: 100%; border-radius: 99px; background: var(--accent-mid); transition: width 0.5s ease; }
   .progress-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 5px; }
 
+  .deficit-bar {
+    background: var(--danger-light); border: 1px solid #f0b8b8;
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 13px; color: var(--danger); margin-bottom: 14px; line-height: 1.5;
+  }
+  .deficit-bar strong { color: var(--danger); }
+
   .today-info { font-size: 14px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
   .today-info strong { color: var(--text); }
-
-  .goal-note {
-    background: var(--accent-light);
-    border-radius: var(--radius-sm);
-    padding: 10px 13px;
-    font-size: 13px;
-    color: var(--accent);
-    margin-bottom: 12px;
-    line-height: 1.5;
-  }
-
+  .goal-note { background: var(--accent-light); border-radius: var(--radius-sm); padding: 10px 13px; font-size: 13px; color: var(--accent); margin-bottom: 12px; line-height: 1.5; }
   .warn-msg { font-size: 13px; color: var(--warn); margin-top: 8px; display: none; }
 
-  .celebration {
-    background: var(--accent-light);
-    border: 1px solid #b5d4be;
-    border-radius: var(--radius);
-    padding: 18px;
-    text-align: center;
-    margin-bottom: 14px;
-    display: none;
-  }
+  .celebration { background: var(--accent-light); border: 1px solid #b5d4be; border-radius: var(--radius); padding: 18px; text-align: center; margin-bottom: 14px; display: none; }
   .cel-icon { font-size: 32px; margin-bottom: 6px; }
   .cel-msg { font-size: 16px; font-weight: 600; color: var(--accent); }
   .cel-sub { font-size: 13px; color: var(--accent-mid); margin-top: 4px; }
 
-  .log-entry {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    gap: 8px;
-  }
+  .log-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 8px; }
   .log-entry:last-child { border-bottom: none; }
   .log-date { color: var(--muted); font-size: 13px; white-space: nowrap; }
   .log-pages { font-weight: 500; }
-
-  .badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 99px;
-    white-space: nowrap;
-  }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
   .badge-ok { background: var(--accent-light); color: var(--accent); }
   .badge-great { background: var(--info-light); color: var(--info); }
   .badge-miss { background: var(--danger-light); color: var(--danger); }
+  .badge-skip { background: #f5f2ee; color: var(--muted); border: 1px solid var(--border); }
 
-  .date-test-bar {
-    background: var(--warn-light);
-    border: 1px solid #f0c8a0;
-    border-radius: var(--radius-sm);
-    padding: 10px 13px;
-    font-size: 13px;
-    color: var(--warn);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  .date-test-bar { background: var(--warn-light); border: 1px solid #f0c8a0; border-radius: var(--radius-sm); padding: 10px 13px; font-size: 13px; color: var(--warn); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
   .date-test-bar label { white-space: nowrap; font-weight: 500; }
   .date-test-bar input { flex: 1; font-size: 13px; padding: 6px 10px; background: #fff; }
 
-  .reset-link {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 13px;
-    text-decoration: underline;
-    cursor: pointer;
-    width: auto;
-    padding: 0;
-    display: inline;
-  }
-
   .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .reset-link { background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; width: auto; padding: 0; display: inline; }
   .empty-log { font-size: 13px; color: var(--muted); }
-
   #tracker-section { display: none; }
 </style>
 </head>
@@ -222,10 +131,12 @@
 
   <div id="tracker-section">
 
-    <div class="date-test-bar" id="test-bar">
+    <div class="date-test-bar">
       <label>Test tarihi:</label>
       <input type="date" id="sim-date" onchange="render()" />
     </div>
+
+    <div id="deficit-banner" class="deficit-bar" style="display:none;"></div>
 
     <div class="metrics">
       <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">Sayfadasın</div></div>
@@ -235,10 +146,8 @@
 
     <div class="card">
       <div class="label">İlerleme</div>
-      <div class="progress-wrap">
-        <div class="progress-bg"><div class="progress-fill" id="book-bar" style="width:0%"></div></div>
-        <div class="progress-row"><span id="pb-read">0 sayfa okundu</span><span id="pb-pct">0%</span></div>
-      </div>
+      <div class="progress-bg"><div class="progress-fill" id="book-bar" style="width:0%"></div></div>
+      <div class="progress-row"><span id="pb-read">0 sayfa okundu</span><span id="pb-pct">0%</span></div>
     </div>
 
     <div class="celebration" id="celebration">
@@ -268,17 +177,30 @@
 </div>
 
 <script>
-let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, log:[] };
+let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startDate:'', log:[] };
 
-function save() { localStorage.setItem('okuma_takip_v1', JSON.stringify(state)); }
+function save() { localStorage.setItem('okuma_takip_v2', JSON.stringify(state)); }
 function load() {
-  try {
-    const s = localStorage.getItem('okuma_takip_v1');
-    if (s) state = JSON.parse(s);
-  } catch(e) {}
+  try { const s = localStorage.getItem('okuma_takip_v2'); if (s) state = JSON.parse(s); } catch(e) {}
 }
 
 function getDate() { return document.getElementById('sim-date').value; }
+
+function daysBetween(d1, d2) {
+  const a = new Date(d1), b = new Date(d2);
+  return Math.floor((b - a) / 86400000);
+}
+
+function dateRange(from, to) {
+  const dates = [];
+  let cur = new Date(from);
+  const end = new Date(to);
+  while (cur <= end) {
+    dates.push(cur.toISOString().split('T')[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
 
 function setupBook() {
   const total = parseInt(document.getElementById('total-pages').value);
@@ -286,9 +208,10 @@ function setupBook() {
   const start = parseInt(document.getElementById('start-page').value) || 0;
   if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
   if (start >= total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
-  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, log:[] };
+  const today = new Date().toISOString().split('T')[0];
+  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, startDate:today, log:[] };
   save();
-  document.getElementById('sim-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sim-date').value = today;
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
   render();
@@ -302,7 +225,7 @@ function logPage() {
   if (!date) { warn.textContent = 'Tarih seç.'; warn.style.display = 'block'; return; }
   if (!input || input < 1) { warn.textContent = 'Geçerli bir sayfa numarası gir.'; warn.style.display = 'block'; return; }
   if (input > state.totalPages) { warn.textContent = `Kitap ${state.totalPages} sayfa.`; warn.style.display = 'block'; return; }
-  if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ilerisi bir sayfa gir.`; warn.style.display = 'block'; return; }
+  if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display = 'block'; return; }
 
   const existing = state.log.find(e => e.date === date);
   const dayStartPage = existing ? existing.dayStartPage : state.currentPage;
@@ -332,6 +255,27 @@ function celebrate(exceeded) {
   setTimeout(() => el.style.display = 'none', 7000);
 }
 
+function calcDeficit(simDate) {
+  if (!state.startDate) return 0;
+  // days elapsed since start (not counting today — today is still ongoing)
+  const elapsed = daysBetween(state.startDate, simDate);
+  if (elapsed <= 0) return 0;
+  // expected pages by end of yesterday
+  const expectedPages = state.baseStartPage + (elapsed * state.dailyGoal);
+  // what we actually read
+  const deficit = Math.max(0, expectedPages - state.currentPage);
+  return deficit;
+}
+
+function getMissedDays(simDate) {
+  if (!state.startDate) return [];
+  const allDays = dateRange(state.startDate, simDate);
+  // exclude today
+  allDays.pop();
+  const loggedDates = new Set(state.log.map(e => e.date));
+  return allDays.filter(d => !loggedDates.has(d));
+}
+
 function render() {
   const date = getDate();
   const entry = state.log.find(e => e.date === date);
@@ -340,12 +284,33 @@ function render() {
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
 
+  // Deficit
+  const deficit = calcDeficit(date);
+  const deficitBanner = document.getElementById('deficit-banner');
+  if (deficit > 0) {
+    const missedDays = getMissedDays(date).length;
+    deficitBanner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın (${missedDays} gün okunmadı).`;
+    deficitBanner.style.display = 'block';
+  } else {
+    deficitBanner.style.display = 'none';
+  }
+
+  // Metrics
   document.getElementById('m-current').textContent = state.currentPage;
-  document.getElementById('m-target').textContent = todayTarget;
+  const targetEl = document.getElementById('m-target');
+  if (entry && entry.hitGoal) {
+    targetEl.textContent = '✓';
+    targetEl.className = 'val done';
+  } else {
+    targetEl.textContent = todayTarget;
+    targetEl.className = 'val';
+  }
   document.getElementById('m-left').textContent = left;
+
   document.getElementById('book-bar').style.width = pct + '%';
   document.getElementById('pb-read').textContent = state.currentPage + ' sayfa okundu';
   document.getElementById('pb-pct').textContent = pct + '%';
+
   document.getElementById('today-info').innerHTML =
     `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Hedef: <strong>${todayTarget}. sayfa</strong>`;
 
@@ -358,11 +323,21 @@ function render() {
     noteEl.style.display = 'none';
   }
 
+  // Log — include missed days
   const logEl = document.getElementById('day-log');
-  if (!state.log.length) {
+  const missedDays = getMissedDays(date);
+  const allEntries = [
+    ...state.log.map(e => ({ ...e, missed: false })),
+    ...missedDays.map(d => ({ date: d, missed: true, pagesRead: 0 }))
+  ].sort((a,b) => b.date.localeCompare(a.date));
+
+  if (!allEntries.length) {
     logEl.innerHTML = '<div class="empty-log">Henüz kayıt yok.</div>';
   } else {
-    logEl.innerHTML = [...state.log].sort((a,b) => b.date.localeCompare(a.date)).map(e => {
+    logEl.innerHTML = allEntries.map(e => {
+      if (e.missed) {
+        return `<div class="log-entry"><span class="log-date">${e.date}</span><span style="color:var(--muted); font-size:13px;">okunmadı</span><span class="badge badge-skip">Atlandı</span></div>`;
+      }
       const badge = e.exceeded
         ? '<span class="badge badge-great">Harika gün</span>'
         : e.hitGoal
@@ -375,16 +350,15 @@ function render() {
 
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
-  localStorage.removeItem('okuma_takip_v1');
-  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, log:[] };
+  localStorage.removeItem('okuma_takip_v2');
+  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startDate:'', log:[] };
   document.getElementById('setup-section').style.display = 'block';
   document.getElementById('tracker-section').style.display = 'none';
 }
 
 load();
-const today = new Date().toISOString().split('T')[0];
 if (state.totalPages > 0) {
-  document.getElementById('sim-date').value = today;
+  document.getElementById('sim-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
   render();
