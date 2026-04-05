@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Okuma Takip" />
+<title>Okuma Takip</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f5f2ee;
+    --surface: #ffffff;
+    --border: #e0dbd4;
+    --text: #1a1714;
+    --muted: #7a746e;
+    --accent: #2d5a3d;
+    --accent-light: #e8f0ea;
+    --accent-mid: #4a8c5c;
+    --warn: #c45a1a;
+    --warn-light: #fdf0e8;
+    --danger-light: #fcecea;
+    --danger: #b03030;
+    --info-light: #e8eef8;
+    --info: #2a4a8a;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .container { max-width: 430px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+
+  input[type=number], input[type=date] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  input[type=number]:focus, input[type=date]:focus {
+    border-color: var(--accent-mid);
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .field { margin-bottom: 12px; }
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:active { opacity: 0.8; }
+  button.secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-weight: 400;
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .metric .val { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .metric .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .progress-wrap { margin-bottom: 4px; }
+  .progress-bg { background: var(--bg); border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; background: var(--accent-mid); transition: width 0.5s ease; }
+  .progress-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+  .today-info { font-size: 14px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .today-info strong { color: var(--text); }
+
+  .goal-note {
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 13px;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .warn-msg { font-size: 13px; color: var(--warn); margin-top: 8px; display: none; }
+
+  .celebration {
+    background: var(--accent-light);
+    border: 1px solid #b5d4be;
+    border-radius: var(--radius);
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .cel-icon { font-size: 32px; margin-bottom: 6px; }
+  .cel-msg { font-size: 16px; font-weight: 600; color: var(--accent); }
+  .cel-sub { font-size: 13px; color: var(--accent-mid); margin-top: 4px; }
+
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    gap: 8px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-date { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .log-pages { font-weight: 500; }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .badge-ok { background: var(--accent-light); color: var(--accent); }
+  .badge-great { background: var(--info-light); color: var(--info); }
+  .badge-miss { background: var(--danger-light); color: var(--danger); }
+
+  .date-test-bar {
+    background: var(--warn-light);
+    border: 1px solid #f0c8a0;
+    border-radius: var(--radius-sm);
+    padding: 10px 13px;
+    font-size: 13px;
+    color: var(--warn);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .date-test-bar label { white-space: nowrap; font-weight: 500; }
+  .date-test-bar input { flex: 1; font-size: 13px; padding: 6px 10px; background: #fff; }
+
+  .reset-link {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+    width: auto;
+    padding: 0;
+    display: inline;
+  }
+
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .empty-log { font-size: 13px; color: var(--muted); }
+
+  #tracker-section { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="setup-section">
+    <h1>📖 Okuma Takip</h1>
+    <p class="subtitle">Her gün kazanılması gereken bir savaş.</p>
+    <div class="card">
+      <h2>Kitabını tanıt</h2>
+      <div class="grid2">
+        <div class="field">
+          <div class="label">Toplam sayfa</div>
+          <input type="number" id="total-pages" placeholder="300" min="1" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <div class="label">Günlük hedef</div>
+          <input type="number" id="daily-goal" placeholder="10" min="1" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Başlangıç sayfası (varsa)</div>
+        <input type="number" id="start-page" placeholder="0" min="0" inputmode="numeric" />
+      </div>
+      <button onclick="setupBook()">Başla</button>
+    </div>
+  </div>
+
+  <div id="tracker-section">
+
+    <div class="date-test-bar" id="test-bar">
+      <label>Test tarihi:</label>
+      <input type="date" id="sim-date" onchange="render()" />
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">Sayfadasın</div></div>
+      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">Bugün hedef</div></div>
+      <div class="metric"><div class="val" id="m-left">—</div><div class="lbl">Kalan sayfa</div></div>
+    </div>
+
+    <div class="card">
+      <div class="label">İlerleme</div>
+      <div class="progress-wrap">
+        <div class="progress-bg"><div class="progress-fill" id="book-bar" style="width:0%"></div></div>
+        <div class="progress-row"><span id="pb-read">0 sayfa okundu</span><span id="pb-pct">0%</span></div>
+      </div>
+    </div>
+
+    <div class="celebration" id="celebration">
+      <div class="cel-icon">🎉</div>
+      <div class="cel-msg" id="cel-msg"></div>
+      <div class="cel-sub" id="cel-sub"></div>
+    </div>
+
+    <div class="card">
+      <h2>Bugün hangi sayfadasın?</h2>
+      <div class="today-info" id="today-info"></div>
+      <div class="goal-note" id="goal-note" style="display:none;"></div>
+      <input type="number" id="page-input" placeholder="Sayfa numarasını gir..." inputmode="numeric" style="margin-bottom:10px;" />
+      <button onclick="logPage()">Kaydet</button>
+      <div class="warn-msg" id="warn-msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="log-header">
+        <h2 style="margin:0;">Geçmiş</h2>
+        <button class="reset-link" onclick="resetAll()">Sıfırla</button>
+      </div>
+      <div id="day-log"><div class="empty-log">Henüz kayıt yok.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, log:[] };
+
+function save() { localStorage.setItem('okuma_takip_v1', JSON.stringify(state)); }
+function load() {
+  try {
+    const s = localStorage.getItem('okuma_takip_v1');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+function getDate() { return document.getElementById('sim-date').value; }
+
+function setupBook() {
+  const total = parseInt(document.getElementById('total-pages').value);
+  const goal = parseInt(document.getElementById('daily-goal').value);
+  const start = parseInt(document.getElementById('start-page').value) || 0;
+  if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
+  if (start >= total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
+  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, log:[] };
+  save();
+  document.getElementById('sim-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('setup-section').style.display = 'none';
+  document.getElementById('tracker-section').style.display = 'block';
+  render();
+}
+
+function logPage() {
+  const input = parseInt(document.getElementById('page-input').value);
+  const warn = document.getElementById('warn-msg');
+  warn.style.display = 'none';
+  const date = getDate();
+  if (!date) { warn.textContent = 'Tarih seç.'; warn.style.display = 'block'; return; }
+  if (!input || input < 1) { warn.textContent = 'Geçerli bir sayfa numarası gir.'; warn.style.display = 'block'; return; }
+  if (input > state.totalPages) { warn.textContent = `Kitap ${state.totalPages} sayfa.`; warn.style.display = 'block'; return; }
+  if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ilerisi bir sayfa gir.`; warn.style.display = 'block'; return; }
+
+  const existing = state.log.find(e => e.date === date);
+  const dayStartPage = existing ? existing.dayStartPage : state.currentPage;
+  const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
+  const pagesRead = input - dayStartPage;
+  const hitGoal = input >= todayTarget;
+  const exceeded = input > todayTarget;
+
+  if (existing) {
+    existing.page = input; existing.pagesRead = pagesRead;
+    existing.hitGoal = hitGoal; existing.exceeded = exceeded;
+  } else {
+    state.log.push({ date, page:input, dayStartPage, todayTarget, pagesRead, hitGoal, exceeded });
+  }
+  state.currentPage = input;
+  document.getElementById('page-input').value = '';
+  save();
+  if (hitGoal) celebrate(exceeded);
+  render();
+}
+
+function celebrate(exceeded) {
+  const el = document.getElementById('celebration');
+  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin çok üzerinde.' : 'Günlük hedefe ulaştın!';
+  document.getElementById('cel-sub').textContent = 'Harika — ama yarın yeniden savaş başlıyor.';
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 7000);
+}
+
+function render() {
+  const date = getDate();
+  const entry = state.log.find(e => e.date === date);
+  const dayStartPage = entry ? entry.dayStartPage : state.currentPage;
+  const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
+  const left = state.totalPages - state.currentPage;
+  const pct = Math.round(state.currentPage / state.totalPages * 100);
+
+  document.getElementById('m-current').textContent = state.currentPage;
+  document.getElementById('m-target').textContent = todayTarget;
+  document.getElementById('m-left').textContent = left;
+  document.getElementById('book-bar').style.width = pct + '%';
+  document.getElementById('pb-read').textContent = state.currentPage + ' sayfa okundu';
+  document.getElementById('pb-pct').textContent = pct + '%';
+  document.getElementById('today-info').innerHTML =
+    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Hedef: <strong>${todayTarget}. sayfa</strong>`;
+
+  const noteEl = document.getElementById('goal-note');
+  if (entry && entry.hitGoal) {
+    const extra = entry.pagesRead - state.dailyGoal;
+    noteEl.textContent = `Hedefe ulaştın — bugün ${entry.pagesRead} sayfa okudun${extra > 0 ? ` (${extra} fazla)` : ''}. Devam edebilirsin.`;
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const logEl = document.getElementById('day-log');
+  if (!state.log.length) {
+    logEl.innerHTML = '<div class="empty-log">Henüz kayıt yok.</div>';
+  } else {
+    logEl.innerHTML = [...state.log].sort((a,b) => b.date.localeCompare(a.date)).map(e => {
+      const badge = e.exceeded
+        ? '<span class="badge badge-great">Harika gün</span>'
+        : e.hitGoal
+        ? '<span class="badge badge-ok">Hedef tamam</span>'
+        : '<span class="badge badge-miss">Eksik</span>';
+      return `<div class="log-entry"><span class="log-date">${e.date}</span><span class="log-pages">${e.pagesRead} sayfa</span>${badge}</div>`;
+    }).join('');
+  }
+}
+
+function resetAll() {
+  if (!confirm('Tüm verileri silmek istiyor musun?')) return;
+  localStorage.removeItem('okuma_takip_v1');
+  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, log:[] };
+  document.getElementById('setup-section').style.display = 'block';
+  document.getElementById('tracker-section').style.display = 'none';
+}
+
+load();
+const today = new Date().toISOString().split('T')[0];
+if (state.totalPages > 0) {
+  document.getElementById('sim-date').value = today;
+  document.getElementById('setup-section').style.display = 'none';
+  document.getElementById('tracker-section').style.display = 'block';
+  render();
+}
+</script>
+</body>
+</html>
