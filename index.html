@@ -93,9 +93,9 @@
   .badge-miss { background: var(--danger-light); color: var(--danger); }
   .badge-skip { background: #f5f2ee; color: var(--muted); border: 1px solid var(--border); }
 
-  .date-test-bar { background: var(--warn-light); border: 1px solid #f0c8a0; border-radius: var(--radius-sm); padding: 10px 13px; font-size: 13px; color: var(--warn); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
-  .date-test-bar label { white-space: nowrap; font-weight: 500; }
-  .date-test-bar input { flex: 1; font-size: 13px; padding: 6px 10px; background: #fff; }
+  .dateclock { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 0 2px; }
+  .dateclock .dc-date { font-size: 15px; font-weight: 600; color: var(--text); }
+  .dateclock .dc-time { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
   .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .reset-link { background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; width: auto; padding: 0; display: inline; }
@@ -131,17 +131,17 @@
 
   <div id="tracker-section">
 
-    <div class="date-test-bar">
-      <label>Test tarihi:</label>
-      <input type="date" id="sim-date" onchange="render()" />
+    <div class="dateclock">
+      <span class="dc-date" id="clock-date"></span>
+      <span class="dc-time" id="clock-time"></span>
     </div>
 
     <div id="deficit-banner" class="deficit-bar" style="display:none;"></div>
 
     <div class="metrics">
-      <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">Sayfadasın</div></div>
-      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">Bugün hedef</div></div>
-      <div class="metric"><div class="val" id="m-left">—</div><div class="lbl">Kalan sayfa</div></div>
+      <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">sayfadasın</div></div>
+      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">bugün bitiş</div></div>
+      <div class="metric"><div class="val" id="m-left">—</div><div class="lbl">kalan sayfa</div></div>
     </div>
 
     <div class="card">
@@ -163,6 +163,7 @@
       <input type="number" id="page-input" placeholder="Sayfa numarasını gir..." inputmode="numeric" style="margin-bottom:10px;" />
       <button onclick="logPage()">Kaydet</button>
       <div class="warn-msg" id="warn-msg"></div>
+      <div id="sync-status" style="font-size:12px; color:var(--muted); margin-top:8px; display:none;"></div>
     </div>
 
     <div class="card">
@@ -217,6 +218,39 @@ function setupBook() {
   render();
 }
 
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx1u5E28NTSSoF8CgOyjEWonDW8KEaGDTA1WcICm2epDx3xugxtXpp9XfoxFhxuYQt1/exec';
+
+function syncToSheets(entry) {
+  const statusEl = document.getElementById('sync-status');
+  statusEl.textContent = '↑ Sheets\'e gönderiliyor...';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+
+  const endPage = Math.min(entry.dayStartPage + state.dailyGoal - 1, state.totalPages);
+
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date: entry.date,
+      dayStartPage: entry.dayStartPage,
+      endPage: endPage,
+      currentPage: entry.page,
+      pagesRead: entry.pagesRead,
+      hitGoal: entry.hitGoal,
+      exceeded: entry.exceeded
+    })
+  }).then(() => {
+    statusEl.textContent = '✓ Sheets\'e kaydedildi';
+    statusEl.style.color = 'var(--accent)';
+    setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
+  }).catch(() => {
+    statusEl.textContent = '⚠ Sheets\'e gönderilemedi (internet bağlantısını kontrol et)';
+    statusEl.style.color = 'var(--warn)';
+  });
+}
+
 function logPage() {
   const input = parseInt(document.getElementById('page-input').value);
   const warn = document.getElementById('warn-msg');
@@ -243,6 +277,8 @@ function logPage() {
   state.currentPage = input;
   document.getElementById('page-input').value = '';
   save();
+  const savedEntry = state.log.find(e => e.date === date);
+  syncToSheets(savedEntry);
   if (hitGoal) celebrate(exceeded);
   render();
 }
@@ -296,13 +332,14 @@ function render() {
   }
 
   // Metrics
-  document.getElementById('m-current').textContent = state.currentPage;
+  document.getElementById('m-current').textContent = state.currentPage + '.';
+  const endPage = Math.min(dayStartPage + state.dailyGoal - 1, state.totalPages);
   const targetEl = document.getElementById('m-target');
   if (entry && entry.hitGoal) {
     targetEl.textContent = '✓';
     targetEl.className = 'val done';
   } else {
-    targetEl.textContent = todayTarget;
+    targetEl.textContent = endPage + '.';
     targetEl.className = 'val';
   }
   document.getElementById('m-left').textContent = left;
@@ -312,7 +349,7 @@ function render() {
   document.getElementById('pb-pct').textContent = pct + '%';
 
   document.getElementById('today-info').innerHTML =
-    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Hedef: <strong>${todayTarget}. sayfa</strong>`;
+    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Bugün bitir: <strong>${endPage}. sayfa</strong>`;
 
   const noteEl = document.getElementById('goal-note');
   if (entry && entry.hitGoal) {
@@ -356,9 +393,35 @@ function resetAll() {
   document.getElementById('tracker-section').style.display = 'none';
 }
 
+function getRealToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getDate() { return getRealToday(); }
+
+function updateClock() {
+  const now = new Date();
+  const dateEl = document.getElementById('clock-date');
+  const timeEl = document.getElementById('clock-time');
+  if (!dateEl || !timeEl) return;
+  dateEl.textContent = now.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
+  timeEl.textContent = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function syncDate() {
+  if (state.totalPages > 0) render();
+}
+
+// Update clock every second
+setInterval(updateClock, 1000);
+updateClock();
+
+// Sync when app comes to foreground
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncDate(); });
+window.addEventListener('focus', syncDate);
+
 load();
 if (state.totalPages > 0) {
-  document.getElementById('sim-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
   render();
