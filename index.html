@@ -158,7 +158,6 @@
 
     <div class="card">
       <h2>Bugün hangi sayfadasın?</h2>
-      <div class="today-info" id="today-info"></div>
       <div class="goal-note" id="goal-note" style="display:none;"></div>
       <input type="number" id="page-input" placeholder="Sayfa numarasını gir..." inputmode="numeric" style="margin-bottom:10px;" />
       <button onclick="logPage()">Kaydet</button>
@@ -357,9 +356,6 @@ function render() {
   document.getElementById('book-bar').style.width = pct + '%';
   document.getElementById('pb-read').textContent = state.currentPage + ' sayfa okundu';
   document.getElementById('pb-pct').textContent = pct + '%';
-
-  document.getElementById('today-info').innerHTML =
-    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Bitir: <strong>${endPage}. sayfa</strong>`;
 
   const noteEl = document.getElementById('goal-note');
   if (entry && entry.hitGoal) {
