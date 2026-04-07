@@ -178,29 +178,54 @@
 </div>
 
 <script>
-let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startDate:'', log:[] };
+// ── TEST MODU: 1 saat = 1 periyot ──────────────────────────────────────────
+// Gerçek moda geçmek için getPeriodKey içindeki 'h' satırını kaldır,
+// periodsBetween'de 3600000 → 86400000 yap, periodRange'de +1h → +1gün yap.
+// ───────────────────────────────────────────────────────────────────────────
 
-function save() { localStorage.setItem('okuma_takip_v2', JSON.stringify(state)); }
+let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', log:[] };
+
+function save() { localStorage.setItem('okuma_takip_v3', JSON.stringify(state)); }
 function load() {
-  try { const s = localStorage.getItem('okuma_takip_v2'); if (s) state = JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem('okuma_takip_v3'); if (s) state = JSON.parse(s); } catch(e) {}
 }
 
-function getDate() { return document.getElementById('sim-date').value; }
-
-function daysBetween(d1, d2) {
-  const a = new Date(d1), b = new Date(d2);
-  return Math.floor((b - a) / 86400000);
+// Periyot anahtarı: YYYY-MM-DD-HH (test: saatlik)
+function getPeriodKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  const h = String(date.getHours()).padStart(2,'0');
+  return `${y}-${m}-${d}-${h}`;
 }
 
-function dateRange(from, to) {
-  const dates = [];
-  let cur = new Date(from);
-  const end = new Date(to);
+function getDate() { return getPeriodKey(new Date()); }
+
+function keyToDate(k) {
+  const [y,m,d,h] = k.split('-').map(Number);
+  return new Date(y, m-1, d, h);
+}
+
+function periodsBetween(k1, k2) {
+  return Math.floor((keyToDate(k2) - keyToDate(k1)) / 3600000);
+}
+
+function periodRange(from, to) {
+  const keys = [];
+  let cur = keyToDate(from);
+  const end = keyToDate(to);
   while (cur <= end) {
-    dates.push(cur.toISOString().split('T')[0]);
-    cur.setDate(cur.getDate() + 1);
+    keys.push(getPeriodKey(cur));
+    cur = new Date(cur.getTime() + 3600000);
   }
-  return dates;
+  return keys;
+}
+
+function formatPeriodLabel(k) {
+  const [y,m,d,h] = k.split('-').map(Number);
+  const date = new Date(y, m-1, d, h);
+  return date.toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' ' +
+    String(h).padStart(2,'0') + ':00';
 }
 
 function setupBook() {
@@ -209,10 +234,9 @@ function setupBook() {
   const start = parseInt(document.getElementById('start-page').value) || 0;
   if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
   if (start >= total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
-  const today = new Date().toISOString().split('T')[0];
-  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, startDate:today, log:[] };
+  const now = getPeriodKey(new Date());
+  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, startPeriod:now, log:[] };
   save();
-  document.getElementById('sim-date').value = today;
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
   render();
@@ -225,28 +249,21 @@ function syncToSheets(entry) {
   statusEl.textContent = '↑ Sheets\'e gönderiliyor...';
   statusEl.style.display = 'block';
   statusEl.style.color = 'var(--muted)';
-
   const endPage = Math.min(entry.dayStartPage + state.dailyGoal - 1, state.totalPages);
-
   fetch(SHEETS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
+    method: 'POST', mode: 'no-cors',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      date: entry.date,
-      dayStartPage: entry.dayStartPage,
-      endPage: endPage,
-      currentPage: entry.page,
-      pagesRead: entry.pagesRead,
-      hitGoal: entry.hitGoal,
-      exceeded: entry.exceeded
+      date: entry.date, dayStartPage: entry.dayStartPage,
+      endPage, currentPage: entry.page,
+      pagesRead: entry.pagesRead, hitGoal: entry.hitGoal, exceeded: entry.exceeded
     })
   }).then(() => {
     statusEl.textContent = '✓ Sheets\'e kaydedildi';
     statusEl.style.color = 'var(--accent)';
     setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
   }).catch(() => {
-    statusEl.textContent = '⚠ Sheets\'e gönderilemedi (internet bağlantısını kontrol et)';
+    statusEl.textContent = '⚠ Sheets\'e gönderilemedi';
     statusEl.style.color = 'var(--warn)';
   });
 }
@@ -256,7 +273,6 @@ function logPage() {
   const warn = document.getElementById('warn-msg');
   warn.style.display = 'none';
   const date = getDate();
-  if (!date) { warn.textContent = 'Tarih seç.'; warn.style.display = 'block'; return; }
   if (!input || input < 1) { warn.textContent = 'Geçerli bir sayfa numarası gir.'; warn.style.display = 'block'; return; }
   if (input > state.totalPages) { warn.textContent = `Kitap ${state.totalPages} sayfa.`; warn.style.display = 'block'; return; }
   if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display = 'block'; return; }
@@ -277,45 +293,40 @@ function logPage() {
   state.currentPage = input;
   document.getElementById('page-input').value = '';
   save();
-  const savedEntry = state.log.find(e => e.date === date);
-  syncToSheets(savedEntry);
+  syncToSheets(state.log.find(e => e.date === date));
   if (hitGoal) celebrate(exceeded);
   render();
 }
 
 function celebrate(exceeded) {
   const el = document.getElementById('celebration');
-  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin çok üzerinde.' : 'Günlük hedefe ulaştın!';
-  document.getElementById('cel-sub').textContent = 'Harika — ama yarın yeniden savaş başlıyor.';
+  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin çok üzerinde.' : 'Periyot hedefine ulaştın!';
+  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta yeniden savaş başlıyor.';
   el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 7000);
 }
 
-function calcDeficit(simDate) {
-  if (!state.startDate) return 0;
-  // days elapsed since start (not counting today — today is still ongoing)
-  const elapsed = daysBetween(state.startDate, simDate);
+function calcDeficit(curPeriod) {
+  if (!state.startPeriod) return 0;
+  const elapsed = periodsBetween(state.startPeriod, curPeriod);
   if (elapsed <= 0) return 0;
-  // expected pages by end of yesterday
-  const expectedPages = state.baseStartPage + (elapsed * state.dailyGoal);
-  // what we actually read
-  const deficit = Math.max(0, expectedPages - state.currentPage);
-  return deficit;
+  const expected = state.baseStartPage + (elapsed * state.dailyGoal);
+  return Math.max(0, expected - state.currentPage);
 }
 
-function getMissedDays(simDate) {
-  if (!state.startDate) return [];
-  const allDays = dateRange(state.startDate, simDate);
-  // exclude today
-  allDays.pop();
-  const loggedDates = new Set(state.log.map(e => e.date));
-  return allDays.filter(d => !loggedDates.has(d));
+function getMissedPeriods(curPeriod) {
+  if (!state.startPeriod) return [];
+  const all = periodRange(state.startPeriod, curPeriod);
+  all.pop(); // exclude current
+  const logged = new Set(state.log.map(e => e.date));
+  return all.filter(p => !logged.has(p));
 }
 
 function render() {
   const date = getDate();
   const entry = state.log.find(e => e.date === date);
   const dayStartPage = entry ? entry.dayStartPage : state.currentPage;
+  const endPage = Math.min(dayStartPage + state.dailyGoal - 1, state.totalPages);
   const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
@@ -324,8 +335,8 @@ function render() {
   const deficit = calcDeficit(date);
   const deficitBanner = document.getElementById('deficit-banner');
   if (deficit > 0) {
-    const missedDays = getMissedDays(date).length;
-    deficitBanner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın (${missedDays} gün okunmadı).`;
+    const missed = getMissedPeriods(date).length;
+    deficitBanner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın (${missed} periyot atlandı).`;
     deficitBanner.style.display = 'block';
   } else {
     deficitBanner.style.display = 'none';
@@ -333,7 +344,6 @@ function render() {
 
   // Metrics
   document.getElementById('m-current').textContent = state.currentPage + '.';
-  const endPage = Math.min(dayStartPage + state.dailyGoal - 1, state.totalPages);
   const targetEl = document.getElementById('m-target');
   if (entry && entry.hitGoal) {
     targetEl.textContent = '✓';
@@ -349,55 +359,50 @@ function render() {
   document.getElementById('pb-pct').textContent = pct + '%';
 
   document.getElementById('today-info').innerHTML =
-    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Bugün bitir: <strong>${endPage}. sayfa</strong>`;
+    `Başlangıç: <strong>${dayStartPage}. sayfa</strong> → Bitir: <strong>${endPage}. sayfa</strong>`;
 
   const noteEl = document.getElementById('goal-note');
   if (entry && entry.hitGoal) {
     const extra = entry.pagesRead - state.dailyGoal;
-    noteEl.textContent = `Hedefe ulaştın — bugün ${entry.pagesRead} sayfa okudun${extra > 0 ? ` (${extra} fazla)` : ''}. Devam edebilirsin.`;
+    noteEl.textContent = `Hedefe ulaştın — ${entry.pagesRead} sayfa okudun${extra > 0 ? ` (${extra} fazla)` : ''}. Devam edebilirsin.`;
     noteEl.style.display = 'block';
   } else {
     noteEl.style.display = 'none';
   }
 
-  // Log — include missed days
+  // Log
   const logEl = document.getElementById('day-log');
-  const missedDays = getMissedDays(date);
+  const missed = getMissedPeriods(date);
   const allEntries = [
     ...state.log.map(e => ({ ...e, missed: false })),
-    ...missedDays.map(d => ({ date: d, missed: true, pagesRead: 0 }))
+    ...missed.map(p => ({ date: p, missed: true, pagesRead: 0 }))
   ].sort((a,b) => b.date.localeCompare(a.date));
 
   if (!allEntries.length) {
     logEl.innerHTML = '<div class="empty-log">Henüz kayıt yok.</div>';
   } else {
     logEl.innerHTML = allEntries.map(e => {
+      const lbl = formatPeriodLabel(e.date);
       if (e.missed) {
-        return `<div class="log-entry"><span class="log-date">${e.date}</span><span style="color:var(--muted); font-size:13px;">okunmadı</span><span class="badge badge-skip">Atlandı</span></div>`;
+        return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:13px;">atlandı</span><span class="badge badge-skip">Atlandı</span></div>`;
       }
       const badge = e.exceeded
-        ? '<span class="badge badge-great">Harika gün</span>'
+        ? '<span class="badge badge-great">Harika</span>'
         : e.hitGoal
-        ? '<span class="badge badge-ok">Hedef tamam</span>'
+        ? '<span class="badge badge-ok">Tamam</span>'
         : '<span class="badge badge-miss">Eksik</span>';
-      return `<div class="log-entry"><span class="log-date">${e.date}</span><span class="log-pages">${e.pagesRead} sayfa</span>${badge}</div>`;
+      return `<div class="log-entry"><span class="log-date">${lbl}</span><span class="log-pages">${e.pagesRead} sayfa</span>${badge}</div>`;
     }).join('');
   }
 }
 
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
-  localStorage.removeItem('okuma_takip_v2');
-  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startDate:'', log:[] };
+  localStorage.removeItem('okuma_takip_v3');
+  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', log:[] };
   document.getElementById('setup-section').style.display = 'block';
   document.getElementById('tracker-section').style.display = 'none';
 }
-
-function getRealToday() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function getDate() { return getRealToday(); }
 
 function updateClock() {
   const now = new Date();
@@ -408,17 +413,18 @@ function updateClock() {
   timeEl.textContent = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
 }
 
-function syncDate() {
-  if (state.totalPages > 0) render();
-}
+// Saat başı periyot geçişini yakala
+let lastPeriod = getPeriodKey(new Date());
+setInterval(() => {
+  const cur = getPeriodKey(new Date());
+  if (cur !== lastPeriod) { lastPeriod = cur; if (state.totalPages > 0) render(); }
+}, 10000); // her 10 saniyede kontrol
 
-// Update clock every second
 setInterval(updateClock, 1000);
 updateClock();
 
-// Sync when app comes to foreground
-document.addEventListener('visibilitychange', () => { if (!document.hidden) syncDate(); });
-window.addEventListener('focus', syncDate);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.totalPages > 0) render(); });
+window.addEventListener('focus', () => { if (state.totalPages > 0) render(); });
 
 load();
 if (state.totalPages > 0) {
