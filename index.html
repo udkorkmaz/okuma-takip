@@ -173,6 +173,20 @@
       <div id="day-log"><div class="empty-log">Henüz kayıt yok.</div></div>
     </div>
 
+    <div class="card">
+      <h2>İlerleme grafiği</h2>
+      <canvas id="progress-chart" height="200" style="width:100%;"></canvas>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
+        <span><span style="display:inline-block;width:24px;height:2px;background:#4a8c5c;vertical-align:middle;margin-right:4px;"></span>Planlanan</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2a4a8a;vertical-align:middle;margin-right:4px;"></span>Gerçekleşen</span>
+      </div>
+    </div>
+
+    <div class="card" id="finish-card">
+      <h2>Tahmini bitiş</h2>
+      <div id="finish-info" style="font-size:14px;color:var(--muted);line-height:1.7;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -325,7 +339,7 @@ function render() {
   const date = getDate();
   const entry = state.log.find(e => e.date === date);
   const dayStartPage = entry ? entry.dayStartPage : state.currentPage;
-  const endPage = Math.min(dayStartPage + state.dailyGoal - 1, state.totalPages);
+  const endPage = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
   const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
@@ -390,6 +404,133 @@ function render() {
       return `<div class="log-entry"><span class="log-date">${lbl}</span><span class="log-pages">${e.pagesRead} sayfa</span>${badge}</div>`;
     }).join('');
   }
+
+  drawChart();
+  renderFinish();
+}
+
+function drawChart() {
+  const canvas = document.getElementById('progress-chart');
+  if (!canvas || !state.startPeriod) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 320;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 200 * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = '200px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  const pad = { top: 12, right: 12, bottom: 28, left: 36 };
+  const cw = W - pad.left - pad.right;
+  const ch = 200 - pad.top - pad.bottom;
+
+  // Build planned line: period 0 → N where N = totalPages needed
+  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
+  const planPoints = [];
+  for (let i = 0; i <= totalPeriods; i++) {
+    planPoints.push({ x: i, y: Math.min(state.baseStartPage + i * state.dailyGoal, state.totalPages) });
+  }
+
+  // Build actual points from log
+  const sortedLog = [...state.log].sort((a,b) => a.date.localeCompare(b.date));
+  const actualPoints = sortedLog.map(e => ({
+    x: periodsBetween(state.startPeriod, e.date),
+    y: e.page
+  }));
+
+  const maxX = Math.max(totalPeriods, actualPoints.length > 0 ? actualPoints[actualPoints.length-1].x : 0);
+  const maxY = state.totalPages;
+
+  const toCanvasX = x => pad.left + (x / maxX) * cw;
+  const toCanvasY = y => pad.top + ch - (y / maxY) * ch;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(120,110,100,0.12)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (ch / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+    const val = Math.round(maxY - (maxY / 4) * i);
+    ctx.fillStyle = '#7a746e'; ctx.font = '10px -apple-system'; ctx.textAlign = 'right';
+    ctx.fillText(val, pad.left - 4, y + 3);
+  }
+
+  // Planned line
+  ctx.beginPath();
+  ctx.strokeStyle = '#4a8c5c';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  planPoints.forEach((p, i) => {
+    const x = toCanvasX(Math.min(p.x, maxX));
+    const y = toCanvasY(p.y);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Actual line + dots
+  if (actualPoints.length > 0) {
+    ctx.beginPath();
+    ctx.strokeStyle = '#2a4a8a';
+    ctx.lineWidth = 2;
+    actualPoints.forEach((p, i) => {
+      const x = toCanvasX(Math.min(p.x, maxX));
+      const y = toCanvasY(p.y);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    actualPoints.forEach(p => {
+      const x = toCanvasX(Math.min(p.x, maxX));
+      const y = toCanvasY(p.y);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#2a4a8a';
+      ctx.fill();
+    });
+  }
+
+  // X axis labels
+  ctx.fillStyle = '#7a746e'; ctx.font = '10px -apple-system'; ctx.textAlign = 'center';
+  const step = Math.ceil(maxX / 5);
+  for (let i = 0; i <= maxX; i += step) {
+    ctx.fillText(i, toCanvasX(i), pad.top + ch + 16);
+  }
+}
+
+function renderFinish() {
+  const el = document.getElementById('finish-info');
+  if (!el || !state.startPeriod) return;
+
+  // Tahmini bitiş: mevcut hıza göre
+  const periodsElapsed = periodsBetween(state.startPeriod, getPeriodKey(new Date()));
+  const pagesRead = state.currentPage - state.baseStartPage;
+  const pagesLeft = state.totalPages - state.currentPage;
+
+  // Planlanan bitiş
+  const periodsNeededPlan = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
+  // TEST MODU: 1 periyot = 1 saat
+  const msPerPeriod = 3600000;
+  const planFinish = new Date(keyToDate(state.startPeriod).getTime() + periodsNeededPlan * msPerPeriod);
+
+  let html = `<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}`;
+
+  if (periodsElapsed > 0 && pagesRead > 0) {
+    const avgPerPeriod = pagesRead / periodsElapsed;
+    const periodsNeededActual = Math.ceil(pagesLeft / avgPerPeriod);
+    const actualFinish = new Date(Date.now() + periodsNeededActual * msPerPeriod);
+    const diff = periodsNeededActual - (periodsNeededPlan - periodsElapsed);
+    const diffLabel = diff > 0
+      ? `<span style="color:var(--danger)"> (${diff} periyot geride)</span>`
+      : diff < 0
+      ? `<span style="color:var(--accent)"> (${Math.abs(diff)} periyot önde)</span>`
+      : `<span style="color:var(--accent)"> (tam planında)</span>`;
+    html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actualFinish.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}${diffLabel}`;
+    html += `<br><span style="color:var(--muted);font-size:12px;">Ortalama ${avgPerPeriod.toFixed(1)} sayfa/periyot</span>`;
+  } else {
+    html += `<br><span style="color:var(--muted);font-size:13px;">Gerçekleşen hız için daha fazla kayıt gerekli.</span>`;
+  }
+
+  el.innerHTML = html;
 }
 
 function resetAll() {
