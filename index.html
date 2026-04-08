@@ -140,7 +140,7 @@
 
     <div class="metrics">
       <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">sayfadasın</div></div>
-      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">bugün bitiş</div></div>
+      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">varılacak hedef</div></div>
       <div class="metric"><div class="val" id="m-left">—</div><div class="lbl">kalan sayfa</div></div>
     </div>
 
@@ -327,7 +327,7 @@ function render() {
 
   // Kümülatif hedefler
   const currentPeriodTarget = cumulativeTarget(elapsed + 1); // bu periyodun sonu hedefi
-  const deficit = Math.max(0, cumulativeTarget(elapsed) - state.currentPage); // geçmiş periyotların açığı
+  const deficit = Math.max(0, cumulativeTarget(elapsed) - state.currentPage); // geçmiş periyotların kümülatif açığı
 
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
@@ -495,14 +495,7 @@ function renderFinish(elapsed) {
     const avgPerPeriod = pagesRead / elapsed;
     const periodsLeft = Math.ceil(pagesLeft / avgPerPeriod);
     const actualFinish = new Date(Date.now() + periodsLeft * MS_PER_PERIOD);
-    const remainingPlan = totalPeriods - elapsed;
-    const diff = periodsLeft - remainingPlan;
-    const diffLabel = diff > 0
-      ? `<span style="color:var(--danger)"> (${diff} periyot geride)</span>`
-      : diff < 0
-      ? `<span style="color:var(--accent)"> (${Math.abs(diff)} periyot önde)</span>`
-      : `<span style="color:var(--accent)"> (tam planında)</span>`;
-    html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actualFinish.toLocaleString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})}${diffLabel}`;
+    html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actualFinish.toLocaleString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})}`;
     html += `<br><span style="color:var(--muted);font-size:12px;">Ortalama ${avgPerPeriod.toFixed(1)} sayfa/periyot</span>`;
   } else {
     html += `<br><span style="color:var(--muted);font-size:13px;">Gerçekleşen hız için daha fazla kayıt gerekli.</span>`;
