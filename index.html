@@ -326,8 +326,8 @@ function render() {
   const elapsed = periodsBetween(state.startPeriod, date);
 
   // Kümülatif hedefler
-  const currentPeriodTarget = cumulativeTarget(elapsed + 1); // bu periyodun sonu hedefi
-  const deficit = Math.max(0, cumulativeTarget(elapsed) - state.currentPage); // geçmiş periyotların kümülatif açığı
+  const currentPeriodTarget = cumulativeTarget(elapsed + 1);
+  const deficit = Math.max(0, currentPeriodTarget - state.currentPage);
 
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
