@@ -192,18 +192,17 @@
 
 <script>
 // ── TEST MODU: 1 saat = 1 periyot ──────────────────────────────────────────
-// Gerçek moda geçmek için getPeriodKey içindeki 'h' satırını kaldır,
-// periodsBetween'de 3600000 → 86400000 yap, periodRange'de +1h → +1gün yap.
+// Gerçek moda geçmek için MS_PER_PERIOD = 86400000 yap, getPeriodKey'den h'yi kaldır.
+const MS_PER_PERIOD = 3600000;
 // ───────────────────────────────────────────────────────────────────────────
 
 let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', log:[] };
 
-function save() { localStorage.setItem('okuma_takip_v3', JSON.stringify(state)); }
+function save() { localStorage.setItem('okuma_takip_v4', JSON.stringify(state)); }
 function load() {
-  try { const s = localStorage.getItem('okuma_takip_v3'); if (s) state = JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem('okuma_takip_v4'); if (s) state = JSON.parse(s); } catch(e) {}
 }
 
-// Periyot anahtarı: YYYY-MM-DD-HH (test: saatlik)
 function getPeriodKey(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth()+1).padStart(2,'0');
@@ -215,12 +214,12 @@ function getPeriodKey(date) {
 function getDate() { return getPeriodKey(new Date()); }
 
 function keyToDate(k) {
-  const [y,m,d,h] = k.split('-').map(Number);
-  return new Date(y, m-1, d, h);
+  const parts = k.split('-').map(Number);
+  return new Date(parts[0], parts[1]-1, parts[2], parts[3] || 0);
 }
 
 function periodsBetween(k1, k2) {
-  return Math.floor((keyToDate(k2) - keyToDate(k1)) / 3600000);
+  return Math.floor((keyToDate(k2) - keyToDate(k1)) / MS_PER_PERIOD);
 }
 
 function periodRange(from, to) {
@@ -229,17 +228,26 @@ function periodRange(from, to) {
   const end = keyToDate(to);
   while (cur <= end) {
     keys.push(getPeriodKey(cur));
-    cur = new Date(cur.getTime() + 3600000);
+    cur = new Date(cur.getTime() + MS_PER_PERIOD);
   }
   return keys;
 }
 
 function formatPeriodLabel(k) {
-  const [y,m,d,h] = k.split('-').map(Number);
-  const date = new Date(y, m-1, d, h);
+  const parts = k.split('-').map(Number);
+  const date = new Date(parts[0], parts[1]-1, parts[2], parts[3] || 0);
   return date.toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' ' +
-    String(h).padStart(2,'0') + ':00';
+    String(parts[3] || 0).padStart(2,'0') + ':00';
 }
+
+// ── Ana hedef fonksiyonu ────────────────────────────────────────────────────
+// Kaçıncı periyottaysak o periyodun sonunda olmamız gereken sayfa:
+// cumulativeTarget(n) = baseStartPage + n * dailyGoal
+// Bu periyodun hedefi: cumulativeTarget(elapsed + 1)
+function cumulativeTarget(periodIndex) {
+  return Math.min(state.baseStartPage + periodIndex * state.dailyGoal, state.totalPages);
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 function setupBook() {
   const total = parseInt(document.getElementById('total-pages').value);
@@ -247,8 +255,7 @@ function setupBook() {
   const start = parseInt(document.getElementById('start-page').value) || 0;
   if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
   if (start >= total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
-  const now = getPeriodKey(new Date());
-  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, startPeriod:now, log:[] };
+  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start, startPeriod:getPeriodKey(new Date()), log:[] };
   save();
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
@@ -257,20 +264,15 @@ function setupBook() {
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx1u5E28NTSSoF8CgOyjEWonDW8KEaGDTA1WcICm2epDx3xugxtXpp9XfoxFhxuYQt1/exec';
 
-function syncToSheets(entry) {
+function syncToSheets(data) {
   const statusEl = document.getElementById('sync-status');
   statusEl.textContent = '↑ Sheets\'e gönderiliyor...';
   statusEl.style.display = 'block';
   statusEl.style.color = 'var(--muted)';
-  const endPage = Math.min(entry.dayStartPage + state.dailyGoal - 1, state.totalPages);
   fetch(SHEETS_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      date: entry.date, dayStartPage: entry.dayStartPage,
-      endPage, currentPage: entry.page,
-      pagesRead: entry.pagesRead, hitGoal: entry.hitGoal, exceeded: entry.exceeded
-    })
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
   }).then(() => {
     statusEl.textContent = '✓ Sheets\'e kaydedildi';
     statusEl.style.color = 'var(--accent)';
@@ -290,66 +292,50 @@ function logPage() {
   if (input > state.totalPages) { warn.textContent = `Kitap ${state.totalPages} sayfa.`; warn.style.display = 'block'; return; }
   if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display = 'block'; return; }
 
-  const existing = state.log.find(e => e.date === date);
-  const dayStartPage = existing ? existing.dayStartPage : state.currentPage;
-  const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
-  const pagesRead = input - dayStartPage;
-  const hitGoal = input >= todayTarget;
-  const exceeded = input > todayTarget;
+  const elapsed = periodsBetween(state.startPeriod, date);
+  const periodTarget = cumulativeTarget(elapsed + 1); // bu periyodun kümülatif hedefi
+  const hitGoal = input >= periodTarget;
+  const exceeded = input > periodTarget;
 
+  const existing = state.log.find(e => e.date === date);
   if (existing) {
-    existing.page = input; existing.pagesRead = pagesRead;
-    existing.hitGoal = hitGoal; existing.exceeded = exceeded;
+    existing.page = input;
+    existing.hitGoal = hitGoal;
+    existing.exceeded = exceeded;
   } else {
-    state.log.push({ date, page:input, dayStartPage, todayTarget, pagesRead, hitGoal, exceeded });
+    state.log.push({ date, page:input, periodIndex:elapsed, periodTarget, hitGoal, exceeded });
   }
   state.currentPage = input;
   document.getElementById('page-input').value = '';
   save();
-  syncToSheets(state.log.find(e => e.date === date));
+  syncToSheets({ date, page:input, periodIndex:elapsed, periodTarget, hitGoal, exceeded });
   if (hitGoal) celebrate(exceeded);
   render();
 }
 
 function celebrate(exceeded) {
   const el = document.getElementById('celebration');
-  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin çok üzerinde.' : 'Periyot hedefine ulaştın!';
-  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta yeniden savaş başlıyor.';
+  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Kümülatif hedefin çok üzerinesin.' : 'Bu periyodun hedefine ulaştın!';
+  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta hedef yükseliyor.';
   el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 7000);
 }
 
-function calcDeficit(curPeriod) {
-  if (!state.startPeriod) return 0;
-  const elapsed = periodsBetween(state.startPeriod, curPeriod);
-  if (elapsed <= 0) return 0;
-  const expected = state.baseStartPage + (elapsed * state.dailyGoal);
-  return Math.max(0, expected - state.currentPage);
-}
-
-function getMissedPeriods(curPeriod) {
-  if (!state.startPeriod) return [];
-  const all = periodRange(state.startPeriod, curPeriod);
-  all.pop(); // exclude current
-  const logged = new Set(state.log.map(e => e.date));
-  return all.filter(p => !logged.has(p));
-}
-
 function render() {
   const date = getDate();
-  const entry = state.log.find(e => e.date === date);
-  const dayStartPage = entry ? entry.dayStartPage : state.currentPage;
-  const endPage = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
-  const todayTarget = Math.min(dayStartPage + state.dailyGoal, state.totalPages);
+  const elapsed = periodsBetween(state.startPeriod, date);
+
+  // Kümülatif hedefler
+  const currentPeriodTarget = cumulativeTarget(elapsed + 1); // bu periyodun sonu hedefi
+  const deficit = Math.max(0, cumulativeTarget(elapsed) - state.currentPage); // geçmiş periyotların açığı
+
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
 
-  // Deficit
-  const deficit = calcDeficit(date);
+  // Deficit banner
   const deficitBanner = document.getElementById('deficit-banner');
   if (deficit > 0) {
-    const missed = getMissedPeriods(date).length;
-    deficitBanner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın (${missed} periyot atlandı).`;
+    deficitBanner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın.`;
     deficitBanner.style.display = 'block';
   } else {
     deficitBanner.style.display = 'none';
@@ -357,12 +343,13 @@ function render() {
 
   // Metrics
   document.getElementById('m-current').textContent = state.currentPage + '.';
+  const entry = state.log.find(e => e.date === date);
   const targetEl = document.getElementById('m-target');
   if (entry && entry.hitGoal) {
     targetEl.textContent = '✓';
     targetEl.className = 'val done';
   } else {
-    targetEl.textContent = endPage + '.';
+    targetEl.textContent = currentPeriodTarget + '.';
     targetEl.className = 'val';
   }
   document.getElementById('m-left').textContent = left;
@@ -373,43 +360,51 @@ function render() {
 
   const noteEl = document.getElementById('goal-note');
   if (entry && entry.hitGoal) {
-    const extra = entry.pagesRead - state.dailyGoal;
-    noteEl.textContent = `Hedefe ulaştın — ${entry.pagesRead} sayfa okudun${extra > 0 ? ` (${extra} fazla)` : ''}. Devam edebilirsin.`;
+    const extra = state.currentPage - entry.periodTarget;
+    noteEl.textContent = `Periyot hedefine ulaştın${extra > 0 ? ` (${extra} sayfa fazla)` : ''}. Devam edebilirsin.`;
     noteEl.style.display = 'block';
   } else {
     noteEl.style.display = 'none';
   }
 
-  // Log
-  const logEl = document.getElementById('day-log');
-  const missed = getMissedPeriods(date);
+  // Log — geçmiş periyotları hesapla
+  const allPeriods = elapsed > 0 ? periodRange(state.startPeriod, date) : [date];
+  const pastPeriods = allPeriods.slice(0, -1); // bugünü hariç tut
+  const loggedKeys = new Set(state.log.map(e => e.date));
+  const missedPeriods = pastPeriods.filter(p => !loggedKeys.has(p));
+
   const allEntries = [
-    ...state.log.map(e => ({ ...e, missed: false })),
-    ...missed.map(p => ({ date: p, missed: true, pagesRead: 0 }))
+    ...state.log.map(e => ({ ...e, missed:false })),
+    ...missedPeriods.map(p => {
+      const pi = periodsBetween(state.startPeriod, p);
+      return { date:p, missed:true, periodTarget: cumulativeTarget(pi+1) };
+    })
   ].sort((a,b) => b.date.localeCompare(a.date));
 
+  const logEl = document.getElementById('day-log');
   if (!allEntries.length) {
     logEl.innerHTML = '<div class="empty-log">Henüz kayıt yok.</div>';
   } else {
     logEl.innerHTML = allEntries.map(e => {
       const lbl = formatPeriodLabel(e.date);
+      const target = e.periodTarget;
       if (e.missed) {
-        return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:13px;">atlandı</span><span class="badge badge-skip">Atlandı</span></div>`;
+        return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:12px;">hedef: ${target}. sayfa</span><span class="badge badge-skip">Atlandı</span></div>`;
       }
       const badge = e.exceeded
         ? '<span class="badge badge-great">Harika</span>'
         : e.hitGoal
         ? '<span class="badge badge-ok">Tamam</span>'
         : '<span class="badge badge-miss">Eksik</span>';
-      return `<div class="log-entry"><span class="log-date">${lbl}</span><span class="log-pages">${e.pagesRead} sayfa</span>${badge}</div>`;
+      return `<div class="log-entry"><span class="log-date">${lbl}</span><span class="log-pages">${e.page}. sayfa</span>${badge}</div>`;
     }).join('');
   }
 
-  drawChart();
-  renderFinish();
+  drawChart(elapsed);
+  renderFinish(elapsed);
 }
 
-function drawChart() {
+function drawChart(elapsed) {
   const canvas = document.getElementById('progress-chart');
   if (!canvas || !state.startPeriod) return;
   const ctx = canvas.getContext('2d');
@@ -420,122 +415,104 @@ function drawChart() {
   canvas.style.height = '200px';
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-  const pad = { top: 12, right: 12, bottom: 28, left: 36 };
+  const pad = { top:12, right:12, bottom:28, left:38 };
   const cw = W - pad.left - pad.right;
   const ch = 200 - pad.top - pad.bottom;
 
-  // Build planned line: period 0 → N where N = totalPages needed
   const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
-  const planPoints = [];
-  for (let i = 0; i <= totalPeriods; i++) {
-    planPoints.push({ x: i, y: Math.min(state.baseStartPage + i * state.dailyGoal, state.totalPages) });
-  }
-
-  // Build actual points from log
-  const sortedLog = [...state.log].sort((a,b) => a.date.localeCompare(b.date));
-  const actualPoints = sortedLog.map(e => ({
-    x: periodsBetween(state.startPeriod, e.date),
-    y: e.page
-  }));
-
-  const maxX = Math.max(totalPeriods, actualPoints.length > 0 ? actualPoints[actualPoints.length-1].x : 0);
+  const maxX = Math.max(totalPeriods, elapsed + 1);
   const maxY = state.totalPages;
 
-  const toCanvasX = x => pad.left + (x / maxX) * cw;
-  const toCanvasY = y => pad.top + ch - (y / maxY) * ch;
+  const toX = x => pad.left + (x / maxX) * cw;
+  const toY = y => pad.top + ch - (y / maxY) * ch;
 
-  // Grid lines
+  // Grid
   ctx.strokeStyle = 'rgba(120,110,100,0.12)';
   ctx.lineWidth = 0.5;
   for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (ch / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
-    const val = Math.round(maxY - (maxY / 4) * i);
-    ctx.fillStyle = '#7a746e'; ctx.font = '10px -apple-system'; ctx.textAlign = 'right';
-    ctx.fillText(val, pad.left - 4, y + 3);
+    const y = pad.top + (ch/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cw, y); ctx.stroke();
+    ctx.fillStyle='#7a746e'; ctx.font='10px -apple-system'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxY-(maxY/4)*i), pad.left-4, y+3);
   }
 
-  // Planned line
+  // Planlanan çizgi (kümülatif, lineer)
   ctx.beginPath();
   ctx.strokeStyle = '#4a8c5c';
   ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 3]);
-  planPoints.forEach((p, i) => {
-    const x = toCanvasX(Math.min(p.x, maxX));
-    const y = toCanvasY(p.y);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  });
+  ctx.setLineDash([4,3]);
+  for (let i = 0; i <= totalPeriods; i++) {
+    const x = toX(i), y = toY(cumulativeTarget(i));
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Actual line + dots
-  if (actualPoints.length > 0) {
+  // Gerçekleşen nokta ve çizgi
+  const sortedLog = [...state.log].sort((a,b) => a.date.localeCompare(b.date));
+  if (sortedLog.length > 0) {
+    // Başlangıç noktası ekle
+    const points = [{ x:0, y:state.baseStartPage }, ...sortedLog.map(e => ({
+      x: periodsBetween(state.startPeriod, e.date) + 1,
+      y: e.page
+    }))];
     ctx.beginPath();
     ctx.strokeStyle = '#2a4a8a';
     ctx.lineWidth = 2;
-    actualPoints.forEach((p, i) => {
-      const x = toCanvasX(Math.min(p.x, maxX));
-      const y = toCanvasY(p.y);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    points.forEach((p,i) => {
+      const x = toX(Math.min(p.x, maxX)), y = toY(p.y);
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
     });
     ctx.stroke();
-    actualPoints.forEach(p => {
-      const x = toCanvasX(Math.min(p.x, maxX));
-      const y = toCanvasY(p.y);
+    points.slice(1).forEach(p => {
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.arc(toX(Math.min(p.x,maxX)), toY(p.y), 4, 0, Math.PI*2);
       ctx.fillStyle = '#2a4a8a';
       ctx.fill();
     });
   }
 
-  // X axis labels
-  ctx.fillStyle = '#7a746e'; ctx.font = '10px -apple-system'; ctx.textAlign = 'center';
-  const step = Math.ceil(maxX / 5);
+  // X ekseni etiketleri
+  ctx.fillStyle='#7a746e'; ctx.font='10px -apple-system'; ctx.textAlign='center';
+  const step = Math.max(1, Math.ceil(maxX/5));
   for (let i = 0; i <= maxX; i += step) {
-    ctx.fillText(i, toCanvasX(i), pad.top + ch + 16);
+    ctx.fillText(i, toX(i), pad.top+ch+16);
   }
 }
 
-function renderFinish() {
+function renderFinish(elapsed) {
   const el = document.getElementById('finish-info');
   if (!el || !state.startPeriod) return;
 
-  // Tahmini bitiş: mevcut hıza göre
-  const periodsElapsed = periodsBetween(state.startPeriod, getPeriodKey(new Date()));
+  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
+  const planFinish = new Date(keyToDate(state.startPeriod).getTime() + totalPeriods * MS_PER_PERIOD);
+
+  let html = `<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})}`;
+
   const pagesRead = state.currentPage - state.baseStartPage;
   const pagesLeft = state.totalPages - state.currentPage;
-
-  // Planlanan bitiş
-  const periodsNeededPlan = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
-  // TEST MODU: 1 periyot = 1 saat
-  const msPerPeriod = 3600000;
-  const planFinish = new Date(keyToDate(state.startPeriod).getTime() + periodsNeededPlan * msPerPeriod);
-
-  let html = `<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}`;
-
-  if (periodsElapsed > 0 && pagesRead > 0) {
-    const avgPerPeriod = pagesRead / periodsElapsed;
-    const periodsNeededActual = Math.ceil(pagesLeft / avgPerPeriod);
-    const actualFinish = new Date(Date.now() + periodsNeededActual * msPerPeriod);
-    const diff = periodsNeededActual - (periodsNeededPlan - periodsElapsed);
+  if (elapsed > 0 && pagesRead > 0) {
+    const avgPerPeriod = pagesRead / elapsed;
+    const periodsLeft = Math.ceil(pagesLeft / avgPerPeriod);
+    const actualFinish = new Date(Date.now() + periodsLeft * MS_PER_PERIOD);
+    const remainingPlan = totalPeriods - elapsed;
+    const diff = periodsLeft - remainingPlan;
     const diffLabel = diff > 0
       ? `<span style="color:var(--danger)"> (${diff} periyot geride)</span>`
       : diff < 0
       ? `<span style="color:var(--accent)"> (${Math.abs(diff)} periyot önde)</span>`
       : `<span style="color:var(--accent)"> (tam planında)</span>`;
-    html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actualFinish.toLocaleDateString('tr-TR', {day:'numeric', month:'long', year:'numeric'})}${diffLabel}`;
+    html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actualFinish.toLocaleString('tr-TR', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'})}${diffLabel}`;
     html += `<br><span style="color:var(--muted);font-size:12px;">Ortalama ${avgPerPeriod.toFixed(1)} sayfa/periyot</span>`;
   } else {
     html += `<br><span style="color:var(--muted);font-size:13px;">Gerçekleşen hız için daha fazla kayıt gerekli.</span>`;
   }
-
   el.innerHTML = html;
 }
 
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
-  localStorage.removeItem('okuma_takip_v3');
+  localStorage.removeItem('okuma_takip_v4');
   state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', log:[] };
   document.getElementById('setup-section').style.display = 'block';
   document.getElementById('tracker-section').style.display = 'none';
@@ -550,12 +527,11 @@ function updateClock() {
   timeEl.textContent = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
 }
 
-// Saat başı periyot geçişini yakala
 let lastPeriod = getPeriodKey(new Date());
 setInterval(() => {
   const cur = getPeriodKey(new Date());
   if (cur !== lastPeriod) { lastPeriod = cur; if (state.totalPages > 0) render(); }
-}, 10000); // her 10 saniyede kontrol
+}, 10000);
 
 setInterval(updateClock, 1000);
 updateClock();
