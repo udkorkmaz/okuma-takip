@@ -44,10 +44,8 @@
   .clock-wrap .dc-date { font-size:15px; font-weight:600; color:var(--text); }
   .clock-wrap .dc-time { font-size:14px; color:var(--muted); font-variant-numeric:tabular-nums; }
   .topbar-controls { display:flex; gap:6px; align-items:center; }
-
   .tog-btn { background:var(--surface); border:1px solid var(--border); border-radius:99px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; width:auto; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; font-family:inherit; }
   .tog-btn:active { opacity:0.7; }
-  .tog-btn.on { background:var(--accent); color:#fff; border-color:var(--accent); }
 
   .seg { display:flex; gap:6px; margin-bottom:12px; }
   .seg-btn { flex:1; padding:9px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; width:auto; text-align:center; font-family:inherit; }
@@ -75,7 +73,6 @@
   .log-entry { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; gap:8px; }
   .log-entry:last-child { border-bottom:none; }
   .log-date { color:var(--muted); font-size:13px; white-space:nowrap; }
-  .log-pages { font-weight:500; }
   .badge { font-size:11px; font-weight:600; padding:3px 9px; border-radius:99px; white-space:nowrap; }
   .badge-ok { background:var(--accent-light); color:var(--accent-mid); }
   .badge-great { background:var(--info-light); color:var(--info); }
@@ -86,6 +83,24 @@
   .reset-link { background:none; border:none; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; width:auto; padding:0; display:inline; font-family:inherit; }
   .empty-log { font-size:13px; color:var(--muted); }
   #tracker-section { display:none; }
+
+  /* Roller picker overlay */
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; display:none; align-items:flex-end; justify-content:center; }
+  .overlay.open { display:flex; }
+  .picker-sheet { background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:24px 20px 40px; width:100%; max-width:430px; }
+  .picker-title { font-size:16px; font-weight:600; margin-bottom:6px; }
+  .picker-sub { font-size:13px; color:var(--muted); margin-bottom:20px; }
+  .roller-wrap { display:flex; justify-content:center; align-items:center; height:180px; overflow:hidden; position:relative; margin-bottom:20px; }
+  .roller-wrap::before, .roller-wrap::after { content:''; position:absolute; left:0; right:0; height:60px; z-index:2; pointer-events:none; }
+  .roller-wrap::before { top:0; background:linear-gradient(to bottom, var(--surface), transparent); }
+  .roller-wrap::after { bottom:0; background:linear-gradient(to top, var(--surface), transparent); }
+  .roller-highlight { position:absolute; left:50%; transform:translateX(-50%); top:50%; margin-top:-22px; width:120px; height:44px; border-top:1.5px solid var(--accent-mid); border-bottom:1.5px solid var(--accent-mid); border-radius:4px; z-index:1; pointer-events:none; }
+  .roller-list { display:flex; flex-direction:column; align-items:center; transition:transform 0.15s ease; cursor:grab; user-select:none; padding:68px 0; }
+  .roller-item { font-size:22px; font-weight:500; height:44px; line-height:44px; color:var(--muted); transition:color 0.15s, font-size 0.15s; min-width:80px; text-align:center; }
+  .roller-item.selected { color:var(--text); font-size:26px; font-weight:700; }
+  .picker-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn-cancel { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
+  .btn-confirm { background:var(--accent); color:#fff; border:none; }
 </style>
 </head>
 <body>
@@ -102,7 +117,7 @@
           <input type="number" id="total-pages" placeholder="300" min="1" inputmode="numeric" />
         </div>
         <div class="field">
-          <div class="label">Periyot hedefi</div>
+          <div class="label">Günlük hedef</div>
           <input type="number" id="daily-goal" placeholder="10" min="1" inputmode="numeric" />
         </div>
       </div>
@@ -128,7 +143,7 @@
         <div class="dc-time" id="clock-time"></div>
       </div>
       <div class="topbar-controls">
-        <button class="tog-btn on" id="period-tog" onclick="togglePeriod()">⏱ Saatlik</button>
+        <button class="tog-btn" id="goal-btn" onclick="openPicker()">🎯 Hedef: —</button>
         <button class="tog-btn" id="dark-tog" onclick="toggleDark()">🌙</button>
       </div>
     </div>
@@ -174,7 +189,7 @@
       <h2>İlerleme grafiği</h2>
       <canvas id="progress-chart" height="200" style="width:100%;"></canvas>
       <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
-        <span><span style="display:inline-block;width:24px;height:2px;background:#4a8c5c;vertical-align:middle;margin-right:4px;"></span>Planlanan</span>
+        <span><span style="display:inline-block;width:24px;height:2px;background:#4a8c5c;vertical-align:middle;margin-right:4px;"></span>Planlanan (temel)</span>
         <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2a4a8a;vertical-align:middle;margin-right:4px;"></span>Gerçekleşen</span>
       </div>
     </div>
@@ -186,14 +201,36 @@
   </div>
 </div>
 
+<!-- Roller Picker Overlay -->
+<div class="overlay" id="picker-overlay" onclick="overlayClick(event)">
+  <div class="picker-sheet">
+    <div class="picker-title">Bu periyot için hedef</div>
+    <div class="picker-sub" id="picker-sub"></div>
+    <div class="roller-wrap">
+      <div class="roller-highlight"></div>
+      <div class="roller-list" id="roller-list"></div>
+    </div>
+    <div class="picker-actions">
+      <button class="btn-cancel" onclick="closePicker()">İptal</button>
+      <button class="btn-confirm" onclick="confirmPicker()">Uygula</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', periodMode:'hour', log:[] };
+let state = {
+  totalPages:0, dailyGoal:0, baseGoal:0, currentPage:0,
+  baseStartPage:0, startPeriod:'', periodMode:'hour',
+  periodGoalOverride: null, // { period: key, goal: n } — this period only
+  log:[]
+};
 let darkMode = false;
 let setupPeriodMode = 'hour';
+let pickerSelectedGoal = 10;
 
-function save() { localStorage.setItem('okuma_v5', JSON.stringify(state)); }
+function save() { localStorage.setItem('okuma_v6', JSON.stringify(state)); }
 function load() {
-  try { const s = localStorage.getItem('okuma_v5'); if (s) state = JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem('okuma_v6'); if (s) state = JSON.parse(s); } catch(e) {}
   try { darkMode = localStorage.getItem('okuma_dark') === '1'; } catch(e) {}
 }
 
@@ -234,7 +271,24 @@ function formatPeriodLabel(k) {
   return date.toLocaleDateString('tr-TR', {day:'numeric', month:'short'}) + ' ' + String(p[3]).padStart(2,'0') + ':00';
 }
 
-function cumulativeTarget(n) { return Math.min(state.baseStartPage + n * state.dailyGoal, state.totalPages); }
+// Aktif periyot hedefi: override varsa onu kullan, yoksa baseGoal
+function getActiveGoal() {
+  const date = getDate();
+  if (state.periodGoalOverride && state.periodGoalOverride.period === date) {
+    return state.periodGoalOverride.goal;
+  }
+  return state.baseGoal;
+}
+
+// Planlanan çizgi için: baseGoal üzerinden kümülatif (sadece grafik için)
+function plannedPage(periodIndex) {
+  return Math.min(state.baseStartPage + periodIndex * state.baseGoal, state.totalPages);
+}
+
+// Bu periyodun varılacak hedefi: currentPage + aktif goal
+function getPeriodTarget() {
+  return Math.min(state.currentPage + getActiveGoal(), state.totalPages);
+}
 
 function selectSetupPeriod(mode) {
   setupPeriodMode = mode;
@@ -242,46 +296,126 @@ function selectSetupPeriod(mode) {
   document.getElementById('setup-day').classList.toggle('on', mode === 'day');
 }
 
-function togglePeriod() {
-  const newMode = state.periodMode === 'hour' ? 'day' : 'hour';
-  // Remap startPeriod and all log keys to new mode
-  state.startPeriod = getPeriodKey(keyToDate(state.startPeriod), newMode);
-  state.log = state.log.map(e => ({ ...e, date: getPeriodKey(keyToDate(e.date), newMode) }));
-  state.periodMode = newMode;
-  save();
-  updatePeriodToggle();
-  render();
-}
-
-function updatePeriodToggle() {
-  const btn = document.getElementById('period-tog');
-  if (!btn) return;
-  if (state.periodMode === 'hour') { btn.textContent = '⏱ Saatlik'; btn.classList.add('on'); }
-  else { btn.textContent = '📅 Günlük'; btn.classList.remove('on'); }
-}
-
 function toggleDark() {
   darkMode = !darkMode;
   document.body.classList.toggle('dark', darkMode);
   document.getElementById('dark-tog').textContent = darkMode ? '☀️' : '🌙';
   try { localStorage.setItem('okuma_dark', darkMode ? '1' : '0'); } catch(e) {}
-  drawChart(periodsBetween(state.startPeriod, getDate()));
+  drawChart();
 }
 
 function setupBook() {
   const total = parseInt(document.getElementById('total-pages').value);
   const goal = parseInt(document.getElementById('daily-goal').value);
   const start = parseInt(document.getElementById('start-page').value) || 0;
-  if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve periyot hedefini doldur.'); return; }
+  if (!total || !goal || total < 1 || goal < 1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
   if (start >= total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
-  state = { totalPages:total, dailyGoal:goal, currentPage:start, baseStartPage:start,
-    periodMode:setupPeriodMode, startPeriod:getPeriodKey(new Date(), setupPeriodMode), log:[] };
+  state = {
+    totalPages:total, dailyGoal:goal, baseGoal:goal, currentPage:start,
+    baseStartPage:start, periodMode:setupPeriodMode,
+    startPeriod:getPeriodKey(new Date(), setupPeriodMode),
+    periodGoalOverride:null, log:[]
+  };
   save();
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
-  updatePeriodToggle();
   render();
 }
+
+// ── Roller Picker ───────────────────────────────────────────────────────────
+let rollerOffset = 0;
+let rollerStartY = 0;
+let rollerDragging = false;
+const ITEM_H = 44;
+const MIN_ITEMS = 1;
+const MAX_ITEMS = 100;
+
+function openPicker() {
+  pickerSelectedGoal = getActiveGoal();
+  const sub = `Temel hedef: ${state.baseGoal} sayfa/periyot. Bu periyot için minimum ${state.baseGoal}.`;
+  document.getElementById('picker-sub').textContent = sub;
+  buildRoller();
+  document.getElementById('picker-overlay').classList.add('open');
+}
+
+function closePicker() {
+  document.getElementById('picker-overlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('picker-overlay')) closePicker();
+}
+
+function buildRoller() {
+  const list = document.getElementById('roller-list');
+  list.innerHTML = '';
+  for (let i = state.baseGoal; i <= Math.max(state.baseGoal + 50, pickerSelectedGoal + 10); i++) {
+    const div = document.createElement('div');
+    div.className = 'roller-item' + (i === pickerSelectedGoal ? ' selected' : '');
+    div.textContent = i;
+    div.dataset.val = i;
+    list.appendChild(div);
+  }
+  // Set scroll position
+  const idx = pickerSelectedGoal - state.baseGoal;
+  rollerOffset = -idx * ITEM_H;
+  list.style.transform = `translateY(${rollerOffset}px)`;
+  attachRollerEvents(list);
+}
+
+function attachRollerEvents(list) {
+  list.onpointerdown = e => {
+    rollerDragging = true;
+    rollerStartY = e.clientY - rollerOffset;
+    list.setPointerCapture(e.pointerId);
+  };
+  list.onpointermove = e => {
+    if (!rollerDragging) return;
+    const raw = e.clientY - rollerStartY;
+    const maxOffset = 0;
+    const minOffset = -(MAX_ITEMS - state.baseGoal) * ITEM_H;
+    rollerOffset = Math.max(minOffset, Math.min(maxOffset, raw));
+    list.style.transition = 'none';
+    list.style.transform = `translateY(${rollerOffset}px)`;
+    updateRollerSelection(list);
+  };
+  list.onpointerup = () => {
+    rollerDragging = false;
+    snapRoller(list);
+  };
+}
+
+function updateRollerSelection(list) {
+  const idx = Math.round(-rollerOffset / ITEM_H);
+  pickerSelectedGoal = state.baseGoal + Math.max(0, idx);
+  list.querySelectorAll('.roller-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
+function snapRoller(list) {
+  const idx = Math.round(-rollerOffset / ITEM_H);
+  rollerOffset = -idx * ITEM_H;
+  list.style.transition = 'transform 0.15s ease';
+  list.style.transform = `translateY(${rollerOffset}px)`;
+  pickerSelectedGoal = state.baseGoal + Math.max(0, idx);
+  list.querySelectorAll('.roller-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
+function confirmPicker() {
+  const date = getDate();
+  if (pickerSelectedGoal === state.baseGoal) {
+    state.periodGoalOverride = null;
+  } else {
+    state.periodGoalOverride = { period: date, goal: pickerSelectedGoal };
+  }
+  save();
+  closePicker();
+  render();
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx1u5E28NTSSoF8CgOyjEWonDW8KEaGDTA1WcICm2epDx3xugxtXpp9XfoxFhxuYQt1/exec';
 
@@ -289,7 +423,7 @@ function syncToSheets(data) {
   const el = document.getElementById('sync-status');
   el.textContent = '↑ Sheets\'e gönderiliyor...'; el.style.display = 'block'; el.style.color = 'var(--muted)';
   fetch(SHEETS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) })
-    .then(() => { el.textContent = '✓ Sheets\'e kaydedildi'; el.style.color = 'var(--accent-mid)'; setTimeout(()=>{ el.style.display='none'; }, 4000); })
+    .then(() => { el.textContent = '✓ Sheets\'e kaydedildi'; el.style.color = 'var(--accent-mid)'; setTimeout(()=>el.style.display='none', 4000); })
     .catch(() => { el.textContent = '⚠ Sheets\'e gönderilemedi'; el.style.color = 'var(--warn)'; });
 }
 
@@ -302,18 +436,27 @@ function logPage() {
   if (input > state.totalPages) { warn.textContent = `Kitap ${state.totalPages} sayfa.`; warn.style.display = 'block'; return; }
   if (input <= state.currentPage) { warn.textContent = `Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display = 'block'; return; }
 
-  const elapsed = periodsBetween(state.startPeriod, date);
-  const periodTarget = cumulativeTarget(elapsed + 1);
+  const activeGoal = getActiveGoal();
+  // periodTarget hesabı: kayıt anındaki currentPage + activeGoal (ilk kayıt için)
+  const existing = state.log.find(e => e.date === date);
+  const periodStartPage = existing ? existing.periodStartPage : state.currentPage;
+  const periodTarget = Math.min(periodStartPage + activeGoal, state.totalPages);
   const hitGoal = input >= periodTarget;
   const exceeded = input > periodTarget;
 
-  const existing = state.log.find(e => e.date === date);
-  if (existing) { existing.page = input; existing.hitGoal = hitGoal; existing.exceeded = exceeded; }
-  else { state.log.push({ date, page:input, periodIndex:elapsed, periodTarget, hitGoal, exceeded }); }
+  if (existing) {
+    existing.page = input; existing.hitGoal = hitGoal; existing.exceeded = exceeded;
+  } else {
+    state.log.push({ date, page:input, periodStartPage, periodTarget, activeGoal, hitGoal, exceeded });
+  }
   state.currentPage = input;
+
+  // Periyot bitti mi? Override'ı temizle (bir sonraki periyotta base'e döner)
+  // Override zaten getActiveGoal() içinde period key'e bağlı, otomatik geçersiz olur.
+
   document.getElementById('page-input').value = '';
   save();
-  syncToSheets({ date, page:input, periodIndex:elapsed, periodTarget, hitGoal, exceeded });
+  syncToSheets({ date, page:input, periodStartPage, periodTarget, activeGoal, hitGoal, exceeded });
   if (hitGoal) celebrate(exceeded);
   render();
 }
@@ -321,28 +464,40 @@ function logPage() {
 function celebrate(exceeded) {
   const el = document.getElementById('celebration');
   document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin üzerinesin.' : 'Periyot hedefine ulaştın!';
-  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta hedef yükseliyor.';
+  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta yeniden savaş.';
   el.style.display = 'block';
   setTimeout(() => el.style.display = 'none', 7000);
 }
 
 function render() {
   const date = getDate();
-  const elapsed = periodsBetween(state.startPeriod, date);
-  const currentPeriodTarget = cumulativeTarget(elapsed + 1);
-  const deficit = Math.max(0, currentPeriodTarget - state.currentPage);
+  const activeGoal = getActiveGoal();
+
+  // Bu periyodun varılacak hedefi
+  const entry = state.log.find(e => e.date === date);
+  const periodStartPage = entry ? entry.periodStartPage : state.currentPage;
+  const periodTarget = Math.min(periodStartPage + activeGoal, state.totalPages);
+
+  // Deficit: varılacak hedefe ne kadar eksik
+  const deficit = Math.max(0, periodTarget - state.currentPage);
   const left = state.totalPages - state.currentPage;
   const pct = Math.round(state.currentPage / state.totalPages * 100);
 
+  // Goal button label
+  document.getElementById('goal-btn').textContent = `🎯 ${activeGoal} sayfa`;
+
   const banner = document.getElementById('deficit-banner');
-  if (deficit > 0) { banner.innerHTML = `Plandan <strong>${deficit} sayfa</strong> geride kaldın.`; banner.style.display = 'block'; }
-  else { banner.style.display = 'none'; }
+  if (deficit > 0 && state.currentPage < periodTarget) {
+    banner.innerHTML = `Bu periyotta <strong>${deficit} sayfa</strong> kaldı.`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 
   document.getElementById('m-current').textContent = state.currentPage + '.';
-  const entry = state.log.find(e => e.date === date);
   const tel = document.getElementById('m-target');
   if (entry && entry.hitGoal) { tel.textContent = '✓'; tel.className = 'val done'; }
-  else { tel.textContent = currentPeriodTarget + '.'; tel.className = 'val'; }
+  else { tel.textContent = periodTarget + '.'; tel.className = 'val'; }
   document.getElementById('m-left').textContent = left;
   document.getElementById('book-bar').style.width = pct + '%';
   document.getElementById('pb-read').textContent = state.currentPage + ' sayfa okundu';
@@ -355,13 +510,15 @@ function render() {
     noteEl.style.display = 'block';
   } else { noteEl.style.display = 'none'; }
 
+  // Log
+  const elapsed = periodsBetween(state.startPeriod, date);
   const allPeriods = elapsed > 0 ? periodRange(state.startPeriod, date) : [date];
   const pastPeriods = allPeriods.slice(0, -1);
   const loggedKeys = new Set(state.log.map(e => e.date));
   const missed = pastPeriods.filter(p => !loggedKeys.has(p));
   const allEntries = [
     ...state.log.map(e => ({ ...e, missed:false })),
-    ...missed.map(p => { const pi = periodsBetween(state.startPeriod, p); return { date:p, missed:true, periodTarget:cumulativeTarget(pi+1) }; })
+    ...missed.map(p => ({ date:p, missed:true, periodTarget:'—' }))
   ].sort((a,b) => b.date.localeCompare(a.date));
 
   const logEl = document.getElementById('day-log');
@@ -369,17 +526,17 @@ function render() {
   else {
     logEl.innerHTML = allEntries.map(e => {
       const lbl = formatPeriodLabel(e.date);
-      if (e.missed) return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:12px;">hedef: ${e.periodTarget}. s.</span><span class="badge badge-skip">Atlandı</span></div>`;
+      if (e.missed) return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:12px;">kayıt yok</span><span class="badge badge-skip">Atlandı</span></div>`;
       const badge = e.exceeded ? '<span class="badge badge-great">Harika</span>' : e.hitGoal ? '<span class="badge badge-ok">Tamam</span>' : '<span class="badge badge-miss">Eksik</span>';
-      return `<div class="log-entry"><span class="log-date">${lbl}</span><span class="log-pages">${e.page}. sayfa</span>${badge}</div>`;
+      return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="font-weight:500;">${e.page}. sayfa</span>${badge}</div>`;
     }).join('');
   }
 
-  drawChart(elapsed);
-  renderFinish(elapsed);
+  drawChart();
+  renderFinish();
 }
 
-function drawChart(elapsed) {
+function drawChart() {
   const canvas = document.getElementById('progress-chart');
   if (!canvas || !state.startPeriod) return;
   const ctx = canvas.getContext('2d');
@@ -387,55 +544,62 @@ function drawChart(elapsed) {
   canvas.width = W * window.devicePixelRatio; canvas.height = 200 * window.devicePixelRatio;
   canvas.style.width = W + 'px'; canvas.style.height = '200px';
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  const pad = { top:12, right:12, bottom:28, left:38 };
-  const cw = W - pad.left - pad.right; const ch = 200 - pad.top - pad.bottom;
-  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
-  const maxX = Math.max(totalPeriods, elapsed + 1); const maxY = state.totalPages;
-  const toX = x => pad.left + (x / maxX) * cw;
-  const toY = y => pad.top + ch - (y / maxY) * ch;
+  const pad = {top:12,right:12,bottom:28,left:38};
+  const cw = W-pad.left-pad.right; const ch = 200-pad.top-pad.bottom;
+  const elapsed = periodsBetween(state.startPeriod, getDate());
+  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.baseGoal);
+  const maxX = Math.max(totalPeriods, elapsed+1); const maxY = state.totalPages;
+  const toX = x => pad.left + (x/maxX)*cw;
+  const toY = y => pad.top + ch - (y/maxY)*ch;
   const isDark = document.body.classList.contains('dark');
   const gridColor = isDark ? 'rgba(200,190,180,0.1)' : 'rgba(120,110,100,0.12)';
   const labelColor = isDark ? '#8a8680' : '#7a746e';
 
-  ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (ch/4)*i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cw, y); ctx.stroke();
-    ctx.fillStyle = labelColor; ctx.font = '10px -apple-system'; ctx.textAlign = 'right';
+  ctx.strokeStyle=gridColor; ctx.lineWidth=0.5;
+  for (let i=0;i<=4;i++) {
+    const y=pad.top+(ch/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cw,y); ctx.stroke();
+    ctx.fillStyle=labelColor; ctx.font='10px -apple-system'; ctx.textAlign='right';
     ctx.fillText(Math.round(maxY-(maxY/4)*i), pad.left-4, y+3);
   }
-  ctx.beginPath(); ctx.strokeStyle = '#4a8c5c'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
-  for (let i = 0; i <= totalPeriods; i++) { const x=toX(i),y=toY(cumulativeTarget(i)); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+
+  // Planlanan çizgi — baseGoal ile kümülatif
+  ctx.beginPath(); ctx.strokeStyle='#4a8c5c'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  for (let i=0;i<=totalPeriods;i++) { const x=toX(i),y=toY(plannedPage(i)); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
   ctx.stroke(); ctx.setLineDash([]);
+
+  // Gerçekleşen
   const sortedLog = [...state.log].sort((a,b)=>a.date.localeCompare(b.date));
-  if (sortedLog.length > 0) {
-    const pts = [{ x:0, y:state.baseStartPage }, ...sortedLog.map(e => ({ x:periodsBetween(state.startPeriod,e.date)+1, y:e.page }))];
+  if (sortedLog.length>0) {
+    const pts=[{x:0,y:state.baseStartPage},...sortedLog.map(e=>({x:periodsBetween(state.startPeriod,e.date)+1,y:e.page}))];
     ctx.beginPath(); ctx.strokeStyle='#2a4a8a'; ctx.lineWidth=2;
     pts.forEach((p,i)=>{ const x=toX(Math.min(p.x,maxX)),y=toY(p.y); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
     ctx.stroke();
     pts.slice(1).forEach(p=>{ ctx.beginPath(); ctx.arc(toX(Math.min(p.x,maxX)),toY(p.y),4,0,Math.PI*2); ctx.fillStyle='#2a4a8a'; ctx.fill(); });
   }
+
   ctx.fillStyle=labelColor; ctx.font='10px -apple-system'; ctx.textAlign='center';
   const step=Math.max(1,Math.ceil(maxX/5));
   for (let i=0;i<=maxX;i+=step) ctx.fillText(i,toX(i),pad.top+ch+16);
 }
 
-function renderFinish(elapsed) {
+function renderFinish() {
   const el = document.getElementById('finish-info');
-  if (!el || !state.startPeriod) return;
+  if (!el||!state.startPeriod) return;
   const ms = getMsPerPeriod();
-  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.dailyGoal);
+  const totalPeriods = Math.ceil((state.totalPages - state.baseStartPage) / state.baseGoal);
   const planFinish = new Date(keyToDate(state.startPeriod).getTime() + totalPeriods * ms);
   const opts = state.periodMode === 'hour'
-    ? { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }
-    : { day:'numeric', month:'long', year:'numeric' };
+    ? {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}
+    : {day:'numeric',month:'long',year:'numeric'};
   let html = `<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleString('tr-TR', opts)}`;
+  const elapsed = periodsBetween(state.startPeriod, getDate());
   const pagesRead = state.currentPage - state.baseStartPage;
   const pagesLeft = state.totalPages - state.currentPage;
   if (elapsed > 0 && pagesRead > 0) {
     const avg = pagesRead / elapsed;
-    const left = Math.ceil(pagesLeft / avg);
-    const actual = new Date(Date.now() + left * ms);
+    const periodsLeft = Math.ceil(pagesLeft / avg);
+    const actual = new Date(Date.now() + periodsLeft * ms);
     html += `<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actual.toLocaleString('tr-TR', opts)}`;
     html += `<br><span style="color:var(--muted);font-size:12px;">Ortalama ${avg.toFixed(1)} sayfa/periyot</span>`;
   } else {
@@ -446,26 +610,26 @@ function renderFinish(elapsed) {
 
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
-  localStorage.removeItem('okuma_v5');
-  state = { totalPages:0, dailyGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', periodMode:'hour', log:[] };
+  localStorage.removeItem('okuma_v6');
+  state = { totalPages:0, dailyGoal:0, baseGoal:0, currentPage:0, baseStartPage:0, startPeriod:'', periodMode:'hour', periodGoalOverride:null, log:[] };
   document.getElementById('setup-section').style.display = 'block';
   document.getElementById('tracker-section').style.display = 'none';
 }
 
 function updateClock() {
   const now = new Date();
-  const de = document.getElementById('clock-date'); const te = document.getElementById('clock-time');
+  const de=document.getElementById('clock-date'); const te=document.getElementById('clock-time');
   if (!de||!te) return;
-  de.textContent = now.toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' });
-  te.textContent = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+  de.textContent = now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+  te.textContent = now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
 }
 
 let lastPeriod = getPeriodKey(new Date());
-setInterval(() => { const cur = getPeriodKey(new Date()); if (cur !== lastPeriod) { lastPeriod = cur; if (state.totalPages > 0) render(); } }, 10000);
-setInterval(updateClock, 1000);
+setInterval(()=>{ const cur=getPeriodKey(new Date()); if(cur!==lastPeriod){lastPeriod=cur; if(state.totalPages>0)render();} },10000);
+setInterval(updateClock,1000);
 updateClock();
-document.addEventListener('visibilitychange', () => { if (!document.hidden && state.totalPages > 0) render(); });
-window.addEventListener('focus', () => { if (state.totalPages > 0) render(); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&state.totalPages>0)render(); });
+window.addEventListener('focus',()=>{ if(state.totalPages>0)render(); });
 
 load();
 document.body.classList.toggle('dark', darkMode);
@@ -473,7 +637,6 @@ document.getElementById('dark-tog').textContent = darkMode ? '☀️' : '🌙';
 if (state.totalPages > 0) {
   document.getElementById('setup-section').style.display = 'none';
   document.getElementById('tracker-section').style.display = 'block';
-  updatePeriodToggle();
   render();
 }
 </script>
