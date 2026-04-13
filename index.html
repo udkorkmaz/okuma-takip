@@ -122,13 +122,6 @@
         <div class="label">Başlangıç sayfası (varsa)</div>
         <input type="number" id="start-page" placeholder="0" min="0" inputmode="numeric" />
       </div>
-      <div class="field">
-        <div class="label">Periyot süresi</div>
-        <div class="seg">
-          <button class="seg-btn on" id="setup-hour" onclick="selectSetupPeriod('hour')">⏱ Saatlik</button>
-          <button class="seg-btn" id="setup-day" onclick="selectSetupPeriod('day')">📅 Günlük</button>
-        </div>
-      </div>
       <button onclick="setupBook()">Başla</button>
     </div>
   </div>
@@ -231,7 +224,6 @@ let state = {
   log:[]
 };
 let darkMode = false;
-let setupPeriodMode = 'hour';
 
 function save() { localStorage.setItem('okuma_v7', JSON.stringify(state)); }
 function load() {
@@ -239,23 +231,20 @@ function load() {
   try { darkMode = localStorage.getItem('okuma_dark') === '1'; } catch(e) {}
 }
 
-function getMsPerPeriod() { return state.periodMode === 'hour' ? 3600000 : 86400000; }
+function getMsPerPeriod() { return 86400000; }
 
 function getPeriodKey(date, mode) {
-  mode = mode || state.periodMode;
   const y = date.getFullYear();
   const m = String(date.getMonth()+1).padStart(2,'0');
   const d = String(date.getDate()).padStart(2,'0');
-  if (mode === 'day') return `${y}-${m}-${d}`;
-  const h = String(date.getHours()).padStart(2,'0');
-  return `${y}-${m}-${d}-${h}`;
+  return `${y}-${m}-${d}`;
 }
 
 function getDate() { return getPeriodKey(new Date()); }
 
 function keyToDate(k) {
   const p = k.split('-').map(Number);
-  return p.length === 3 ? new Date(p[0],p[1]-1,p[2]) : new Date(p[0],p[1]-1,p[2],p[3]);
+  return new Date(p[0],p[1]-1,p[2]);
 }
 
 function periodsBetween(k1, k2) {
@@ -271,9 +260,8 @@ function periodRange(from, to) {
 
 function formatPeriodLabel(k) {
   const p=k.split('-').map(Number);
-  const d=p.length===3?new Date(p[0],p[1]-1,p[2]):new Date(p[0],p[1]-1,p[2],p[3]);
-  if (state.periodMode==='day') return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short',weekday:'short'});
-  return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' '+String(p[3]).padStart(2,'0')+':00';
+  const d=new Date(p[0],p[1]-1,p[2]);
+  return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short',weekday:'short'});
 }
 
 // Grafik için planlanan çizgi — baseGoal üzerinden kümülatif
@@ -292,33 +280,27 @@ function getActiveGoalAmount() {
 // Her render'da son log'a bakarak currentTarget'ı güncelle
 function computeCurrentTarget() {
   const date = getDate();
-  // Bu periyotta zaten kayıt varsa, o kaydın periodTarget'ını kullan
-  const entry = state.log.find(e => e.date === date);
-  if (entry) return entry.periodTarget;
+  const activeGoal = getActiveGoalAmount();
 
-  // Önceki periyodun son kaydına bak
-  const sorted = [...state.log].sort((a,b) => b.date.localeCompare(a.date));
-  const prevEntry = sorted[0];
+  // Bugünün kaydı varsa periodStartPage oradan gelir
+  const todayEntry = state.log.find(e => e.date === date);
+  const periodStartPage = todayEntry ? todayEntry.periodStartPage : state.currentPage;
+
+  // Önceki periyodun son kaydına bak (bugünü hariç)
+  const prevEntry = [...state.log]
+    .filter(e => e.date !== date)
+    .sort((a,b) => b.date.localeCompare(a.date))[0];
 
   if (!prevEntry) {
-    // İlk periyot — baseGoal kadar ilerle
-    return Math.min(state.currentPage + getActiveGoalAmount(), state.totalPages);
-  }
-
-  // Önceki periyotta hedefe varıldı mı?
-  if (prevEntry.hitGoal) {
-    // currentPage + baseGoal
-    return Math.min(state.currentPage + getActiveGoalAmount(), state.totalPages);
+    // İlk periyot
+    return Math.min(periodStartPage + activeGoal, state.totalPages);
+  } else if (prevEntry.hitGoal) {
+    // Önceki gün hedefe varıldı: bugünün başlangıcından + activeGoal
+    return Math.min(periodStartPage + activeGoal, state.totalPages);
   } else {
-    // Varılamadı: önceki hedef + baseGoal
-    return Math.min(prevEntry.periodTarget + getActiveGoalAmount(), state.totalPages);
+    // Önceki gün hedefe varılamadı: önceki hedef + activeGoal
+    return Math.min(prevEntry.periodTarget + activeGoal, state.totalPages);
   }
-}
-
-function selectSetupPeriod(mode) {
-  setupPeriodMode = mode;
-  document.getElementById('setup-hour').classList.toggle('on', mode==='hour');
-  document.getElementById('setup-day').classList.toggle('on', mode==='day');
 }
 
 function toggleDark() {
@@ -337,8 +319,8 @@ function setupBook() {
   if (start>=total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
   const initialTarget = Math.min(start + goal, total);
   state = {
-    totalPages:total, baseGoal:goal, currentPage:start, baseStartPage:start,
-    periodMode:setupPeriodMode, startPeriod:getPeriodKey(new Date(),setupPeriodMode),
+    totalPages:total, baseGoal:goal, maxGoalEver:goal, currentPage:start, baseStartPage:start,
+    periodMode:'day', startPeriod:getPeriodKey(new Date(),'day'),
     nextPeriodTarget:initialTarget, currentTarget:initialTarget,
     periodGoalOverride:null, log:[]
   };
@@ -351,9 +333,11 @@ function setupBook() {
 // ── Goal override sheet ─────────────────────────────────────────────────────
 function openSheet() {
   const cur = getActiveGoalAmount();
+  const minGoal = (state.maxGoalEver || state.baseGoal) + 1;
   document.getElementById('goal-override-input').value = cur;
+  document.getElementById('goal-override-input').min = minGoal;
   document.getElementById('sheet-sub').textContent =
-    `Temel hedef: ${state.baseGoal} sayfa/periyot. Minimum bu değer olabilir.`;
+    `Mevcut en yüksek hedef: ${state.maxGoalEver || state.baseGoal} sayfa/gün. Minimum ${minGoal} girebilirsin.`;
   document.getElementById('sheet-warn').style.display = 'none';
   document.getElementById('goal-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('goal-override-input').focus(), 100);
@@ -365,18 +349,28 @@ function overlayClick(e) { if (e.target===document.getElementById('goal-overlay'
 
 function confirmSheet() {
   const val = parseInt(document.getElementById('goal-override-input').value);
+  const minGoal = (state.maxGoalEver || state.baseGoal) + 1;
   const warnEl = document.getElementById('sheet-warn');
-  if (!val || val < state.baseGoal) {
-    warnEl.textContent = `Minimum ${state.baseGoal} olmalı.`;
+  if (!val || val < minGoal) {
+    warnEl.textContent = `Minimum ${minGoal} olmalı.`;
     warnEl.style.display = 'block';
     return;
   }
   const date = getDate();
-  if (val === state.baseGoal) {
-    state.periodGoalOverride = null;
-  } else {
-    state.periodGoalOverride = { period:date, goal:val };
+  state.periodGoalOverride = { period:date, goal:val };
+  if (val > (state.maxGoalEver || state.baseGoal)) {
+    state.maxGoalEver = val;
   }
+
+  // Bugünün log kaydı varsa yeniden hesapla
+  const entry = state.log.find(e => e.date === date);
+  if (entry) {
+    const newTarget = computeCurrentTarget();
+    entry.periodTarget = newTarget;
+    entry.hitGoal = entry.page >= newTarget;
+    entry.exceeded = entry.page > newTarget;
+  }
+
   save();
   closeSheet();
   render();
@@ -403,15 +397,17 @@ function logPage() {
   if (input>state.totalPages) { warn.textContent=`Kitap ${state.totalPages} sayfa.`; warn.style.display='block'; return; }
   if (input<=state.currentPage) { warn.textContent=`Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display='block'; return; }
 
+  const existing = state.log.find(e => e.date===date);
+  const periodStartPage = existing ? existing.periodStartPage : state.currentPage;
   const periodTarget = computeCurrentTarget();
   const hitGoal = input >= periodTarget;
   const exceeded = input > periodTarget;
 
-  const existing = state.log.find(e => e.date===date);
   if (existing) {
     existing.page = input; existing.hitGoal = hitGoal; existing.exceeded = exceeded;
+    existing.periodTarget = periodTarget;
   } else {
-    state.log.push({ date, page:input, periodTarget, activeGoal:getActiveGoalAmount(), hitGoal, exceeded });
+    state.log.push({ date, page:input, periodStartPage, periodTarget, activeGoal:getActiveGoalAmount(), hitGoal, exceeded });
   }
   state.currentPage = input;
   document.getElementById('page-input').value = '';
@@ -551,9 +547,7 @@ function renderFinish() {
   const ms=getMsPerPeriod();
   const totalPeriods=Math.ceil((state.totalPages-state.baseStartPage)/state.baseGoal);
   const planFinish=new Date(keyToDate(state.startPeriod).getTime()+totalPeriods*ms);
-  const opts=state.periodMode==='hour'
-    ?{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}
-    :{day:'numeric',month:'long',year:'numeric'};
+  const opts={day:'numeric',month:'long',year:'numeric'};
   let html=`<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleString('tr-TR',opts)}`;
   const elapsed=periodsBetween(state.startPeriod,getDate());
   const pagesRead=state.currentPage-state.baseStartPage;
@@ -573,7 +567,7 @@ function renderFinish() {
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
   localStorage.removeItem('okuma_v7');
-  state={totalPages:0,baseGoal:0,currentPage:0,baseStartPage:0,startPeriod:'',periodMode:'hour',nextPeriodTarget:0,currentTarget:0,periodGoalOverride:null,log:[]};
+  state={totalPages:0,baseGoal:0,maxGoalEver:0,currentPage:0,baseStartPage:0,startPeriod:'',periodMode:'day',nextPeriodTarget:0,currentTarget:0,periodGoalOverride:null,log:[]};
   document.getElementById('setup-section').style.display='block';
   document.getElementById('tracker-section').style.display='none';
 }
