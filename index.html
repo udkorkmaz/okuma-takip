@@ -319,7 +319,7 @@ function setupBook() {
   if (start>=total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
   const initialTarget = Math.min(start + goal, total);
   state = {
-    totalPages:total, baseGoal:goal, maxGoalEver:goal, currentPage:start, baseStartPage:start,
+    totalPages:total, baseGoal:goal, currentPage:start, baseStartPage:start,
     periodMode:'day', startPeriod:getPeriodKey(new Date(),'day'),
     nextPeriodTarget:initialTarget, currentTarget:initialTarget,
     periodGoalOverride:null, log:[]
@@ -333,11 +333,11 @@ function setupBook() {
 // ── Goal override sheet ─────────────────────────────────────────────────────
 function openSheet() {
   const cur = getActiveGoalAmount();
-  const minGoal = (state.maxGoalEver || state.baseGoal) + 1;
-  document.getElementById('goal-override-input').value = cur;
+  const minGoal = state.baseGoal + 1;
+  document.getElementById('goal-override-input').value = cur >= minGoal ? cur : minGoal;
   document.getElementById('goal-override-input').min = minGoal;
   document.getElementById('sheet-sub').textContent =
-    `Mevcut en yüksek hedef: ${state.maxGoalEver || state.baseGoal} sayfa/gün. Minimum ${minGoal} girebilirsin.`;
+    `Temel hedef: ${state.baseGoal} sayfa/gün. Minimum ${minGoal} girebilirsin.`;
   document.getElementById('sheet-warn').style.display = 'none';
   document.getElementById('goal-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('goal-override-input').focus(), 100);
@@ -349,7 +349,7 @@ function overlayClick(e) { if (e.target===document.getElementById('goal-overlay'
 
 function confirmSheet() {
   const val = parseInt(document.getElementById('goal-override-input').value);
-  const minGoal = (state.maxGoalEver || state.baseGoal) + 1;
+  const minGoal = state.baseGoal + 1;
   const warnEl = document.getElementById('sheet-warn');
   if (!val || val < minGoal) {
     warnEl.textContent = `Minimum ${minGoal} olmalı.`;
@@ -358,9 +358,7 @@ function confirmSheet() {
   }
   const date = getDate();
   state.periodGoalOverride = { period:date, goal:val };
-  if (val > (state.maxGoalEver || state.baseGoal)) {
-    state.maxGoalEver = val;
-  }
+  save();
 
   // Bugünün log kaydı varsa yeniden hesapla
   const entry = state.log.find(e => e.date === date);
@@ -567,7 +565,7 @@ function renderFinish() {
 function resetAll() {
   if (!confirm('Tüm verileri silmek istiyor musun?')) return;
   localStorage.removeItem('okuma_v7');
-  state={totalPages:0,baseGoal:0,maxGoalEver:0,currentPage:0,baseStartPage:0,startPeriod:'',periodMode:'day',nextPeriodTarget:0,currentTarget:0,periodGoalOverride:null,log:[]};
+  state={totalPages:0,baseGoal:0,currentPage:0,baseStartPage:0,startPeriod:'',periodMode:'day',nextPeriodTarget:0,currentTarget:0,periodGoalOverride:null,log:[]};
   document.getElementById('setup-section').style.display='block';
   document.getElementById('tracker-section').style.display='none';
 }
