@@ -1,598 +1,540 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Okuma Takip" />
-<title>Okuma Takip</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Okuma Uygulaması — Kitap Bilgileri</title>
 <style>
-  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  :root {
-    --bg:#f5f2ee; --surface:#ffffff; --border:#e0dbd4;
-    --text:#1a1714; --muted:#7a746e; --accent:#2d5a3d;
-    --accent-light:#e8f0ea; --accent-mid:#4a8c5c;
-    --warn:#c45a1a; --danger-light:#fcecea; --danger:#b03030;
-    --info-light:#e8eef8; --info:#2a4a8a;
-    --radius:14px; --radius-sm:8px;
-  }
-  body.dark {
-    --bg:#18181a; --surface:#242428; --border:#38383e;
-    --text:#f0ede8; --muted:#8a8680; --accent:#4a8c5c;
-    --accent-light:#1e3027; --accent-mid:#5aac70;
-    --warn:#d97b3a; --danger-light:#2a1414; --danger:#e06060;
-    --info-light:#141e30; --info:#6a8fd4;
-  }
-  body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); transition:background 0.2s,color 0.2s; }
-  .container { max-width:430px; margin:0 auto; padding:20px 16px 40px; }
-  h1 { font-size:22px; font-weight:700; letter-spacing:-0.5px; margin-bottom:4px; }
-  h2 { font-size:16px; font-weight:600; margin-bottom:14px; }
-  .subtitle { font-size:13px; color:var(--muted); margin-bottom:28px; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; }
-  .label { font-size:12px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
-  input[type=number] { width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:16px; background:var(--bg); color:var(--text); outline:none; font-family:inherit; -webkit-appearance:none; }
-  input[type=number]:focus { border-color:var(--accent-mid); }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
-  .field { margin-bottom:12px; }
-  button { display:block; width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
-  button:active { opacity:0.8; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
+  --border:#2e2e2e; --border2:rgba(255,255,255,0.13);
+  --text:#f0ede8; --text2:#8C8880; --text3:#575450;
+  --accent:#d4ff4e; --accent-dim:#a8cc3e; --accent-dark:#1e2a06;
+  --green:#4ADE80; --green-bg:rgba(74,222,128,0.12);
+  --red:#F87171; --red-bg:rgba(248,113,113,0.12);
+  --blue:#60A5FA;
+  --radius:14px; --radius-sm:10px;
+  --mono:'DM Mono',monospace; --display:'Bebas Neue',sans-serif; --body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;background:var(--bg);font-family:var(--body);color:var(--text);overflow-x:hidden}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:40px}
+.list-section{padding:12px 20px 0;flex:1}
+.item-wrap{margin-bottom:8px;position:relative;overflow:hidden;border-radius:var(--radius)}
+.hint-bg{position:absolute;inset:0;border-radius:var(--radius);display:flex;align-items:center;padding:0 20px;pointer-events:none;opacity:0}
+.hint-done{background:var(--green);justify-content:flex-start}
+.hint-icon{font-size:20px;color:#fff;font-weight:700}
+.item{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.push-num{font-family:var(--display);font-size:32px;color:var(--text3);line-height:1;width:36px;text-align:center;flex-shrink:0}
+.push-body{flex:1;min-width:0}
+.swipe-arrow{font-size:20px;color:var(--text3)}
+.list-section{padding-top:20px}.item{touch-action:pan-y;cursor:grab}.item:active{cursor:grabbing}
+.book-info{margin:20px 20px 0;padding:20px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);display:grid;gap:18px;flex-shrink:0}
+.book-info h1{font-size:20px;color:var(--accent);font-weight:600}
+.book-field{display:grid;gap:8px}
+.book-field label{font-size:14px;color:var(--text);font-weight:600;font-family:var(--body)}
+.book-field input{width:100%;min-width:0;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-family:var(--body);font-size:16px;user-select:text;-webkit-user-select:text;outline:none}
+.book-field input:focus{border-color:var(--accent)}
+.book-field input::placeholder{color:var(--text3)}
 
-  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:0 2px; }
-  .clock-wrap .dc-date { font-size:15px; font-weight:600; color:var(--text); }
-  .clock-wrap .dc-time { font-size:14px; color:var(--muted); font-variant-numeric:tabular-nums; }
-  .topbar-controls { display:flex; gap:6px; align-items:center; }
-  .tog-btn { background:var(--surface); border:1px solid var(--border); border-radius:99px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; width:auto; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; font-family:inherit; }
-  .tog-btn:active { opacity:0.7; }
+.help,.summary{font-size:12px;color:var(--text2);line-height:1.6}
+.primary{padding:14px;border:0;border-radius:10px;background:var(--accent);color:var(--bg);font:600 14px var(--body);cursor:pointer}
+.error{color:var(--red);font-size:13px}
+.day-title{font-size:15px;margin:24px 0 10px;color:var(--accent)}
+.day-title small{display:block;margin-top:4px;font-size:12px;color:var(--text2);font-weight:400}
+.push-num{width:auto;min-width:42px;color:var(--text);font-family:var(--mono);font-size:26px}
+.page-label{font-size:13px;color:var(--text2)}
+.item-wrap.done .item{opacity:.45;cursor:default}
+.item-wrap.done .swipe-arrow{color:var(--green)}
+.summary{margin-bottom:12px;overflow-wrap:anywhere}
 
-  .seg { display:flex; gap:6px; margin-bottom:12px; }
-  .seg-btn { flex:1; padding:9px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; width:auto; text-align:center; font-family:inherit; }
-  .seg-btn.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+[hidden]{display:none!important}
+.screen-header{padding:24px 20px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.screen-header h1{font-size:22px;color:var(--text);outline:none}
+.nav-btn{border:1px solid var(--border2);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--accent);font:500 13px var(--body);cursor:pointer}
+.empty-state{padding:28px 0;text-align:center;display:grid;gap:16px}
+.empty-state p{font-size:14px;color:var(--text2);line-height:1.6}
 
-  .metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
-  .metric { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 10px; text-align:center; }
-  .metric .val { font-size:24px; font-weight:700; letter-spacing:-0.5px; color:var(--text); }
-  .metric .val.done { font-size:28px; color:var(--accent-mid); }
-  .metric .lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+:root{--bg:#18181a;--surface:#242428;--surface2:#2b2b30;--border:#38383e;--border2:#38383e;--text:#f0ede8;--text2:#8a8680;--text3:#8a8680;--accent:#58af74;--accent-dim:#58af74;--green:#58af74;--body:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+[data-theme="light"]{--bg:#f5f2ee;--surface:#fff;--surface2:#eeeae4;--border:#e0dbd4;--border2:#e0dbd4;--text:#1a1714;--text2:#7a746e;--text3:#7a746e;--accent:#4a8c5c;--accent-dim:#4a8c5c;--green:#4a8c5c}
+.app{max-width:530px}
+.dashboard{padding:28px 15px 0}
+.sr-only,#summary{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 3px 18px}
+.clock{min-width:0}
+#clock-date{font-size:18px;font-weight:600;line-height:1.3}
+#clock-time{font-size:16px;color:var(--text2);line-height:1.4;font-variant-numeric:tabular-nums}
+.top-controls{display:flex;gap:8px;align-items:center}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;padding:8px 14px;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--text2);font:600 14px var(--body);cursor:pointer;min-height:36px}
+.theme-pill{width:52px;padding:8px;font-size:17px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:17px}
+.metric{padding:15px 5px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-align:center}
+.metric-value{font-size:30px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.metric-label{font-size:14px;color:var(--text2);margin-top:3px}
+.progress-card{padding:22px;background:var(--surface);border:1px solid var(--border);border-radius:18px}
+.progress-title{font-size:14px;color:var(--text2);letter-spacing:.5px;margin-bottom:8px}
+.progress-track{height:10px;overflow:hidden;border-radius:99px;background:var(--border)}
+#progress-fill{width:0;height:100%;border-radius:99px;background:var(--green);transition:width .3s ease}
+.progress-caption{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:14px;color:var(--text2)}
+.list-section{padding:0 15px 20px}
+@media(max-width:360px){.metric-label{font-size:12px}.metric-value{font-size:26px}.pill{padding:8px 10px;font-size:12px}#clock-date{font-size:16px}.topbar{gap:6px}}
 
-  .progress-bg { background:var(--bg); border-radius:99px; height:8px; overflow:hidden; }
-  .progress-fill { height:100%; border-radius:99px; background:var(--accent-mid); transition:width 0.5s ease; }
-  .progress-row { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:5px; }
+.chart-nav{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.chart-content{padding:20px 15px}.chart-card{padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.chart-legend{display:flex;gap:20px;font-size:13px;color:var(--text2);margin-bottom:12px}.legend-line{display:inline-block;width:22px;border-top:3px solid var(--green);vertical-align:middle;margin-right:6px}.legend-line.actual{border-color:#60a5fa}
+#reading-chart{width:100%;height:auto;display:block}.chart-note{font-size:13px;color:var(--text2);line-height:1.6;margin:14px 0}
+.chart-inspect{display:grid;gap:8px;margin-top:14px;font-size:13px;color:var(--text2)}.chart-inspect input{padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;color-scheme:dark}.chart-inspect output{line-height:1.6}
 
-  .info-bar { border-radius:var(--radius-sm); padding:10px 14px; font-size:13px; margin-bottom:14px; line-height:1.5; }
-  .info-bar.deficit { background:var(--danger-light); border:1px solid #f0b8b8; color:var(--danger); }
-  .info-bar.deficit strong { color:var(--danger); }
-  .info-bar.ahead { background:var(--accent-light); border:1px solid #b5d4be; color:var(--accent-mid); }
+.export-actions{display:flex;gap:8px;margin-top:12px}.export-actions button{flex:1}.export-actions button:disabled{opacity:.4;cursor:default}.export-status{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px}.export-status:empty{display:none}
 
-  .goal-note { background:var(--accent-light); border-radius:var(--radius-sm); padding:10px 13px; font-size:13px; color:var(--accent-mid); margin-bottom:12px; line-height:1.5; }
-  .warn-msg { font-size:13px; color:var(--warn); margin-top:8px; display:none; }
-  .celebration { background:var(--accent-light); border:1px solid #b5d4be; border-radius:var(--radius); padding:18px; text-align:center; margin-bottom:14px; display:none; }
-  .cel-icon { font-size:32px; margin-bottom:6px; }
-  .cel-msg { font-size:16px; font-weight:600; color:var(--accent-mid); }
-  .cel-sub { font-size:13px; color:var(--accent-mid); margin-top:4px; }
+.reset-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.reset-dialog{width:100%;max-width:390px;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 70px #0005}
+.reset-dialog h2{font-size:20px;margin-bottom:12px}.reset-dialog p{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.reset-buttons{display:flex;gap:10px}.reset-buttons button{flex:1}
 
-  .log-entry { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; gap:8px; }
-  .log-entry:last-child { border-bottom:none; }
-  .log-date { color:var(--muted); font-size:13px; white-space:nowrap; }
-  .badge { font-size:11px; font-weight:600; padding:3px 9px; border-radius:99px; white-space:nowrap; }
-  .badge-ok { background:var(--accent-light); color:var(--accent-mid); }
-  .badge-great { background:var(--info-light); color:var(--info); }
-  .badge-miss { background:var(--danger-light); color:var(--danger); }
-  .badge-skip { background:var(--bg); color:var(--muted); border:1px solid var(--border); }
-
-  .log-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .reset-link { background:none; border:none; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; width:auto; padding:0; display:inline; font-family:inherit; }
-  .empty-log { font-size:13px; color:var(--muted); }
-  #tracker-section { display:none; }
-
-  /* Goal override sheet */
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; display:none; align-items:flex-end; justify-content:center; }
-  .overlay.open { display:flex; }
-  .sheet { background:var(--surface); border-radius:var(--radius) var(--radius) 0 0; padding:24px 20px 40px; width:100%; max-width:430px; }
-  .sheet h3 { font-size:16px; font-weight:600; margin-bottom:6px; }
-  .sheet-sub { font-size:13px; color:var(--muted); margin-bottom:16px; }
-  .sheet-input-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-  .sheet-input-row input { flex:1; font-size:24px; font-weight:700; text-align:center; padding:12px; }
-  .sheet-input-row .unit { font-size:14px; color:var(--muted); white-space:nowrap; }
-  .sheet-warn { font-size:13px; color:var(--danger); margin-bottom:12px; display:none; }
-  .sheet-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .btn-cancel { background:var(--bg); color:var(--muted); border:1px solid var(--border); padding:12px; }
-  .btn-confirm { background:var(--accent); color:#fff; border:none; padding:12px; }
+.progress-track{position:relative;overflow:visible;height:12px}
+#planned-fill{position:absolute;left:0;top:0;height:100%;width:0;background:#60a5fa66;border-radius:99px;transition:width .3s ease}
+#progress-fill{position:relative;z-index:1}
+#planned-marker{position:absolute;top:-4px;bottom:-4px;width:4px;background:#60a5fa;border-radius:2px;z-index:2;box-shadow:0 0 0 1px var(--surface);transition:left .3s ease}
+.plan-caption{display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:space-between;margin-top:10px;font-size:12px;line-height:1.6}
+#planned-label{color:#60a5fa}#plan-difference{color:var(--text2);font-weight:600}
+#plan-difference.ahead{color:var(--green)}#plan-difference.behind{color:var(--red)}
+.primary:disabled{opacity:.4;cursor:default}.book-field input:read-only{opacity:.6}
 </style>
 </head>
 <body>
-<div class="container">
-
-  <div id="setup-section">
-    <h1>📖 Okuma Takip</h1>
-    <p class="subtitle">Her gün kazanılması gereken bir savaş.</p>
-    <div class="card">
-      <h2>Kitabını tanıt</h2>
-      <div class="grid2">
-        <div class="field">
-          <div class="label">Toplam sayfa</div>
-          <input type="number" id="total-pages" placeholder="300" min="1" inputmode="numeric" />
-        </div>
-        <div class="field">
-          <div class="label">Günlük hedef (sayfa)</div>
-          <input type="number" id="daily-goal" placeholder="10" min="1" inputmode="numeric" />
-        </div>
-      </div>
-      <div class="field">
-        <div class="label">Başlangıç sayfası (varsa)</div>
-        <input type="number" id="start-page" placeholder="0" min="0" inputmode="numeric" />
-      </div>
-      <button onclick="setupBook()">Başla</button>
+<main class="app">
+<section id="settings-screen" hidden>
+  <header class="screen-header"><h1 id="settings-title" tabindex="-1">Takvim Ayarları</h1><button class="nav-btn" id="back-home" type="button">← Ana Ekran</button></header>
+  <form class="book-info" id="book-form" aria-label="Kitap bilgileri">
+    <h1>Kitap Bilgileri</h1>
+    <div class="book-field">
+      <label for="book-name">Kitabın Adı</label>
+      <input id="book-name" required type="text" placeholder="Kitabın adını yaz" autocomplete="off">
+    </div>
+    <div class="book-field">
+      <label for="total-pages">Toplam Okunacak Sayfa Sayısı</label>
+      <input id="total-pages" required type="number" max="10000" min="1" step="1" inputmode="numeric" placeholder="Örn. 300">
+    </div>
+    <div class="book-field">
+      <label for="daily-pages">Günlük Okunacak Sayfa Sayısı</label>
+      <input id="daily-pages" type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Örn. 10" required>
+    </div>
+    <div class="book-field">
+      <label for="start-page">Başlanacak Sayfa</label>
+      <input id="start-page" type="number" min="1" max="10000" step="1" inputmode="numeric" value="1" required>
+      <p class="help">Henüz okumadığın ilk sayfa. 40. sayfayı bitirdiysen 41 yaz. Toplam sayfa alanına kitabın son sayfa numarasını gir.</p>
+    </div>
+    <div class="book-field">
+      <label for="start-date">Başlangıç Tarihi</label>
+      <input id="start-date" type="date" required>
+    </div>
+    <button class="primary" id="build-plan" type="submit" disabled>Okuma Takvimini Oluştur</button>
+    <p class="help">İlk plan seçtiğin başlangıç tarihinde başlar. Sonraki hedef değişiklikleri bugün itibarıyla uygulanır; geçmiş plan ve okuma kayıtları korunur. Bugün okuduğun sayfalar yeni günlük hedefe dahildir. Başlangıç sayfası ve tarihi ilk planla sabitlenir.</p>
+    <p class="error" id="error" role="status"></p>
+  </form>
+</section>
+<section id="home-screen">
+<header class="dashboard">
+  <h1 id="home-title" class="sr-only" tabindex="-1">Okuma</h1>
+  <div class="topbar">
+    <div class="clock"><div id="clock-date"></div><div id="clock-time"></div></div>
+    <div class="top-controls">
+      <button id="open-settings" class="pill" type="button" title="Takvim Ayarları" aria-label="Günlük hedef ve takvim ayarları">🎯 <span id="daily-badge">— sayfa</span></button>
+      <button id="theme-toggle" class="pill theme-pill" type="button" title="Açık temaya geç" aria-label="Açık temaya geç">☀️</button>
     </div>
   </div>
-
-  <div id="tracker-section">
-    <div class="topbar">
-      <div class="clock-wrap">
-        <div class="dc-date" id="clock-date"></div>
-        <div class="dc-time" id="clock-time"></div>
-      </div>
-      <div class="topbar-controls">
-        <button class="tog-btn" id="goal-btn" onclick="openSheet()">🎯 —</button>
-        <button class="tog-btn" id="dark-tog" onclick="toggleDark()">🌙</button>
-      </div>
-    </div>
-
-    <div id="status-bar" class="info-bar" style="display:none;"></div>
-
-    <div class="metrics">
-      <div class="metric"><div class="val" id="m-current">—</div><div class="lbl">sayfadasın</div></div>
-      <div class="metric"><div class="val" id="m-target">—</div><div class="lbl">varılacak hedef</div></div>
-      <div class="metric"><div class="val" id="m-left">—</div><div class="lbl">kalan sayfa</div></div>
-    </div>
-
-    <div class="card">
-      <div class="label">İlerleme</div>
-      <div class="progress-bg"><div class="progress-fill" id="book-bar" style="width:0%"></div></div>
-      <div class="progress-row"><span id="pb-read">0 sayfa okundu</span><span id="pb-pct">0%</span></div>
-    </div>
-
-    <div class="celebration" id="celebration">
-      <div class="cel-icon">🎉</div>
-      <div class="cel-msg" id="cel-msg"></div>
-      <div class="cel-sub" id="cel-sub"></div>
-    </div>
-
-    <div class="card">
-      <h2>Hangi sayfadasın?</h2>
-      <div class="goal-note" id="goal-note" style="display:none;"></div>
-      <input type="number" id="page-input" placeholder="Sayfa numarasını gir..." inputmode="numeric" style="margin-bottom:10px;" />
-      <button onclick="logPage()">Kaydet</button>
-      <div class="warn-msg" id="warn-msg"></div>
-      <div id="sync-status" style="font-size:12px;color:var(--muted);margin-top:8px;display:none;"></div>
-    </div>
-
-    <div class="card">
-      <div class="log-header">
-        <h2 style="margin:0;">Geçmiş</h2>
-        <button class="reset-link" onclick="resetAll()">Sıfırla</button>
-      </div>
-      <div id="day-log"><div class="empty-log">Henüz kayıt yok.</div></div>
-    </div>
-
-    <div class="card">
-      <h2>İlerleme grafiği</h2>
-      <canvas id="progress-chart" height="200" style="width:100%;"></canvas>
-      <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);">
-        <span><span style="display:inline-block;width:24px;height:2px;background:#4a8c5c;vertical-align:middle;margin-right:4px;"></span>Planlanan</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2a4a8a;vertical-align:middle;margin-right:4px;"></span>Gerçekleşen</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Tahmini bitiş</h2>
-      <div id="finish-info" style="font-size:14px;color:var(--muted);line-height:1.7;"></div>
-    </div>
+  <div class="metrics" aria-live="polite">
+    <div class="metric"><div class="metric-value" id="current-page">—</div><div class="metric-label">sayfadasın</div></div>
+    <div class="metric"><div class="metric-value" id="target-page">—</div><div class="metric-label">varılacak hedef</div></div>
+    <div class="metric"><div class="metric-value" id="remaining-pages">—</div><div class="metric-label">kalan sayfa</div></div>
   </div>
+  <div class="progress-card">
+    <div class="progress-title">İLERLEME</div>
+    <div class="progress-track" id="progress-track" role="progressbar" aria-label="Kitap ilerlemesi" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="planned-fill"></div><div id="progress-fill"></div><div id="planned-marker" hidden></div></div>
+    <div class="progress-caption"><span id="progress-read">0 sayfa okundu</span><span id="progress-percent">0%</span></div>
+    <div class="plan-caption" id="plan-caption" hidden><span id="planned-label"></span><strong id="plan-difference" aria-live="polite"></strong></div>
+  </div>
+<div class="export-actions"><button type="button" class="nav-btn" id="share-csv">↗ CSV Gönder</button></div>
+<p class="export-status" id="export-status" role="status" aria-live="polite"></p>
+<div class="chart-nav"><button type="button" class="nav-btn" id="reset-reading">↺ Reset</button><button type="button" class="nav-btn" id="open-chart">↗ İlerleme Grafiği</button></div>
+</header>
+<div class="list-section">
+<div id="empty-state" class="empty-state" hidden><p>Okumaya başlamak için bir takvim oluştur.</p><button class="primary" type="button" id="create-first-plan">Okuma Takvimini Oluştur</button></div>
+<p class="summary" id="summary" aria-live="polite"></p><div id="card-list"></div></div></section>
+<section id="chart-screen" hidden>
+<header class="screen-header"><h1 id="chart-title" tabindex="-1">İlerleme Grafiği</h1><button type="button" class="nav-btn" id="chart-back">← Ana Ekran</button></header>
+<div class="chart-content"><p id="chart-book" class="chart-note"></p>
+<div class="chart-card" id="chart-card"><div class="chart-legend"><span><i class="legend-line"></i>Planlanan</span><span><i class="legend-line actual"></i>Gerçekleşen</span></div>
+<svg id="reading-chart" viewBox="0 0 480 340" role="img" aria-label="Tarihe göre planlanan ve gerçekleşen okuma ilerlemesi"></svg>
+<label class="chart-inspect">Tarih seç<input type="date" id="chart-date"><output id="chart-values" aria-live="polite"></output></label></div>
+<p class="chart-note" id="chart-note"></p></div>
+</section></main>
+<div class="reset-overlay" id="reset-overlay" hidden>
+  <section class="reset-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-title" aria-describedby="reset-description">
+    <h2 id="reset-title">Okumayı sıfırla</h2>
+    <p id="reset-description">Okunan sayfalar ve gerçekleşen okuma geçmişi sıfırlanacak. Kitap bilgileri, başlangıç tarihi ve günlük hedef korunacak; plan revizyonları sıfırlanacak.</p>
+    <div class="reset-buttons"><button type="button" class="nav-btn" id="cancel-reset">Vazgeç</button><button type="button" class="primary" id="confirm-reset">Sıfırla</button></div>
+  </section>
 </div>
-
-<!-- Goal override sheet -->
-<div class="overlay" id="goal-overlay" onclick="overlayClick(event)">
-  <div class="sheet">
-    <h3>Bu periyot için hedef</h3>
-    <div class="sheet-sub" id="sheet-sub"></div>
-    <div class="sheet-input-row">
-      <input type="number" id="goal-override-input" inputmode="numeric" min="1" />
-      <span class="unit">sayfa/periyot</span>
-    </div>
-    <div class="sheet-warn" id="sheet-warn"></div>
-    <div class="sheet-actions">
-      <button class="btn-cancel" onclick="closeSheet()">İptal</button>
-      <button class="btn-confirm" onclick="confirmSheet()">Uygula</button>
-    </div>
-  </div>
-</div>
-
 <script>
-// ── State ───────────────────────────────────────────────────────────────────
-// nextPeriodTarget: bir sonraki periyodun varılacak sayfa hedefi
-// Her periyot başında bu değer güncellenir:
-//   - Önceki periyotta hedefe varıldıysa: currentPage + baseGoal
-//   - Varılamadıysa: önceki nextPeriodTarget + baseGoal
-// periodGoalOverride: { period, goal } — sadece o periyot için aktif hedef (sayfa/periyot)
-let state = {
-  totalPages:0, baseGoal:0, currentPage:0, baseStartPage:0,
-  startPeriod:'', periodMode:'hour',
-  nextPeriodTarget:0,      // bir sonraki periyodun varılacak sayfa hedefi
-  currentTarget:0,         // bu periyodun varılacak sayfa hedefi
-  periodGoalOverride:null, // { period, goal }
-  log:[]
-};
-let darkMode = false;
-
-function save() { localStorage.setItem('okuma_v7', JSON.stringify(state)); }
-function load() {
-  try { const s = localStorage.getItem('okuma_v7'); if (s) state = JSON.parse(s); } catch(e) {}
-  try { darkMode = localStorage.getItem('okuma_dark') === '1'; } catch(e) {}
+const fields = ['book-name','total-pages','daily-pages','start-page','start-date'].map(id=>document.getElementById(id));
+const [bookName,totalPages,dailyPages,startPage,startDate] = fields;
+startDate.value=dateKey(new Date());
+const KEY='reading_calendar_pages_v1';
+let plan=null;
+function showScreen(settings){
+  updatePlanButton();
+  document.getElementById('chart-screen').hidden=true;
+  document.getElementById('settings-screen').hidden=!settings;
+  document.getElementById('home-screen').hidden=settings;
+  window.scrollTo(0,0);
+  document.getElementById(settings?'settings-title':'home-title').focus({preventScroll:true});
 }
-
-function getMsPerPeriod() { return 86400000; }
-
-function getPeriodKey(date, mode) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,'0');
-  const d = String(date.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
-}
-
-function getDate() { return getPeriodKey(new Date()); }
-
-function keyToDate(k) {
-  const p = k.split('-').map(Number);
-  return new Date(p[0],p[1]-1,p[2]);
-}
-
-function periodsBetween(k1, k2) {
-  return Math.floor((keyToDate(k2) - keyToDate(k1)) / getMsPerPeriod());
-}
-
-function periodRange(from, to) {
-  const keys=[]; const ms=getMsPerPeriod();
-  let cur=keyToDate(from); const end=keyToDate(to);
-  while (cur<=end) { keys.push(getPeriodKey(cur)); cur=new Date(cur.getTime()+ms); }
-  return keys;
-}
-
-function formatPeriodLabel(k) {
-  const p=k.split('-').map(Number);
-  const d=new Date(p[0],p[1]-1,p[2]);
-  return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short',weekday:'short'});
-}
-
-// Grafik için planlanan çizgi — baseGoal üzerinden kümülatif
-function plannedPage(n) { return Math.min(state.baseStartPage + n * state.baseGoal, state.totalPages); }
-
-// Aktif periyot hedef miktarı (sayfa/periyot) — override varsa onu kullan
-function getActiveGoalAmount() {
-  const date = getDate();
-  if (state.periodGoalOverride && state.periodGoalOverride.period === date) {
-    return state.periodGoalOverride.goal;
-  }
-  return state.baseGoal;
-}
-
-// ── Periyot geçişi mantığı ──────────────────────────────────────────────────
-// Her render'da son log'a bakarak currentTarget'ı güncelle
-function computeCurrentTarget() {
-  const date = getDate();
-  const activeGoal = getActiveGoalAmount();
-
-  // Bugünün kaydı varsa periodStartPage oradan gelir
-  const todayEntry = state.log.find(e => e.date === date);
-  const periodStartPage = todayEntry ? todayEntry.periodStartPage : state.currentPage;
-
-  // Önceki periyodun son kaydına bak (bugünü hariç)
-  const prevEntry = [...state.log]
-    .filter(e => e.date !== date)
-    .sort((a,b) => b.date.localeCompare(a.date))[0];
-
-  if (!prevEntry) {
-    // İlk periyot
-    return Math.min(periodStartPage + activeGoal, state.totalPages);
-  } else if (prevEntry.hitGoal) {
-    // Önceki gün hedefe varıldı: bugünün başlangıcından + activeGoal
-    return Math.min(periodStartPage + activeGoal, state.totalPages);
-  } else {
-    // Önceki gün hedefe varılamadı: önceki hedef + activeGoal
-    return Math.min(prevEntry.periodTarget + activeGoal, state.totalPages);
-  }
-}
-
-function toggleDark() {
-  darkMode = !darkMode;
-  document.body.classList.toggle('dark', darkMode);
-  document.getElementById('dark-tog').textContent = darkMode ? '☀️' : '🌙';
-  try { localStorage.setItem('okuma_dark', darkMode?'1':'0'); } catch(e) {}
-  drawChart();
-}
-
-function setupBook() {
-  const total = parseInt(document.getElementById('total-pages').value);
-  const goal = parseInt(document.getElementById('daily-goal').value);
-  const start = parseInt(document.getElementById('start-page').value) || 0;
-  if (!total||!goal||total<1||goal<1) { alert('Toplam sayfa ve günlük hedefi doldur.'); return; }
-  if (start>=total) { alert('Başlangıç sayfası toplam sayfadan küçük olmalı.'); return; }
-  const initialTarget = Math.min(start + goal, total);
-  state = {
-    totalPages:total, baseGoal:goal, currentPage:start, baseStartPage:start,
-    periodMode:'day', startPeriod:getPeriodKey(new Date(),'day'),
-    nextPeriodTarget:initialTarget, currentTarget:initialTarget,
-    periodGoalOverride:null, log:[]
-  };
-  save();
-  document.getElementById('setup-section').style.display = 'none';
-  document.getElementById('tracker-section').style.display = 'block';
-  render();
-}
-
-// ── Goal override sheet ─────────────────────────────────────────────────────
-function openSheet() {
-  const cur = getActiveGoalAmount();
-  const minGoal = state.baseGoal + 1;
-  document.getElementById('goal-override-input').value = cur >= minGoal ? cur : minGoal;
-  document.getElementById('goal-override-input').min = minGoal;
-  document.getElementById('sheet-sub').textContent =
-    `Temel hedef: ${state.baseGoal} sayfa/gün. Minimum ${minGoal} girebilirsin.`;
-  document.getElementById('sheet-warn').style.display = 'none';
-  document.getElementById('goal-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('goal-override-input').focus(), 100);
-}
-
-function closeSheet() { document.getElementById('goal-overlay').classList.remove('open'); }
-
-function overlayClick(e) { if (e.target===document.getElementById('goal-overlay')) closeSheet(); }
-
-function confirmSheet() {
-  const val = parseInt(document.getElementById('goal-override-input').value);
-  const minGoal = state.baseGoal + 1;
-  const warnEl = document.getElementById('sheet-warn');
-  if (!val || val < minGoal) {
-    warnEl.textContent = `Minimum ${minGoal} olmalı.`;
-    warnEl.style.display = 'block';
-    return;
-  }
-  const date = getDate();
-  state.periodGoalOverride = { period:date, goal:val };
-  save();
-
-  // Bugünün log kaydı varsa yeniden hesapla
-  const entry = state.log.find(e => e.date === date);
-  if (entry) {
-    const newTarget = computeCurrentTarget();
-    entry.periodTarget = newTarget;
-    entry.hitGoal = entry.page >= newTarget;
-    entry.exceeded = entry.page > newTarget;
-  }
-
-  save();
-  closeSheet();
-  render();
-}
-
-// ── Sheets sync ─────────────────────────────────────────────────────────────
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx1u5E28NTSSoF8CgOyjEWonDW8KEaGDTA1WcICm2epDx3xugxtXpp9XfoxFhxuYQt1/exec';
-
-function syncToSheets(data) {
-  const el = document.getElementById('sync-status');
-  el.textContent='↑ Sheets\'e gönderiliyor...'; el.style.display='block'; el.style.color='var(--muted)';
-  fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-    .then(()=>{ el.textContent='✓ Sheets\'e kaydedildi'; el.style.color='var(--accent-mid)'; setTimeout(()=>el.style.display='none',4000); })
-    .catch(()=>{ el.textContent='⚠ Sheets\'e gönderilemedi'; el.style.color='var(--warn)'; });
-}
-
-// ── Log page ────────────────────────────────────────────────────────────────
-function logPage() {
-  const input = parseInt(document.getElementById('page-input').value);
-  const warn = document.getElementById('warn-msg');
-  warn.style.display = 'none';
-  const date = getDate();
-  if (!input||input<1) { warn.textContent='Geçerli bir sayfa numarası gir.'; warn.style.display='block'; return; }
-  if (input>state.totalPages) { warn.textContent=`Kitap ${state.totalPages} sayfa.`; warn.style.display='block'; return; }
-  if (input<=state.currentPage) { warn.textContent=`Şu an ${state.currentPage}. sayfadasın. Daha ileri bir sayfa gir.`; warn.style.display='block'; return; }
-
-  const existing = state.log.find(e => e.date===date);
-  const periodStartPage = existing ? existing.periodStartPage : state.currentPage;
-  const periodTarget = computeCurrentTarget();
-  const hitGoal = input >= periodTarget;
-  const exceeded = input > periodTarget;
-
-  if (existing) {
-    existing.page = input; existing.hitGoal = hitGoal; existing.exceeded = exceeded;
-    existing.periodTarget = periodTarget;
-  } else {
-    state.log.push({ date, page:input, periodStartPage, periodTarget, activeGoal:getActiveGoalAmount(), hitGoal, exceeded });
-  }
-  state.currentPage = input;
-  document.getElementById('page-input').value = '';
-  save();
-  syncToSheets({ date, page:input, periodTarget, hitGoal, exceeded });
-  if (hitGoal) celebrate(exceeded);
-  render();
-}
-
-function celebrate(exceeded) {
-  const el = document.getElementById('celebration');
-  document.getElementById('cel-msg').textContent = exceeded ? 'Müthiş! Hedefin üzerinesin.' : 'Periyot hedefine ulaştın!';
-  document.getElementById('cel-sub').textContent = 'Harika — bir sonraki periyotta yeniden savaş.';
-  el.style.display = 'block';
-  setTimeout(()=>el.style.display='none', 7000);
-}
-
-// ── Render ──────────────────────────────────────────────────────────────────
-function render() {
-  const date = getDate();
-  const periodTarget = computeCurrentTarget();
-  const activeGoalAmount = getActiveGoalAmount();
-  const deficit = Math.max(0, periodTarget - state.currentPage);
-  const left = state.totalPages - state.currentPage;
-  const pct = Math.round(state.currentPage / state.totalPages * 100);
-
-  // Goal button
-  document.getElementById('goal-btn').textContent = `🎯 ${activeGoalAmount} sayfa`;
-
-  // Status bar
-  const bar = document.getElementById('status-bar');
-  const entry = state.log.find(e => e.date===date);
-  if (entry && entry.hitGoal) {
-    bar.className = 'info-bar ahead';
-    const extra = state.currentPage - periodTarget;
-    bar.textContent = extra > 0
-      ? `Periyot hedefine ulaştın (+${extra} fazla). Devam edebilirsin.`
-      : 'Periyot hedefine tam ulaştın. Devam edebilirsin.';
-    bar.style.display = 'block';
-  } else if (deficit > 0) {
-    bar.className = 'info-bar deficit';
-    bar.innerHTML = `Bu periyotta <strong>${deficit} sayfa</strong> kaldı (hedef: ${periodTarget}. sayfa).`;
-    bar.style.display = 'block';
-  } else {
-    bar.style.display = 'none';
-  }
-
-  document.getElementById('m-current').textContent = state.currentPage + '.';
-  const tel = document.getElementById('m-target');
-  if (entry && entry.hitGoal) { tel.textContent='✓'; tel.className='val done'; }
-  else { tel.textContent=periodTarget+'.'; tel.className='val'; }
-  document.getElementById('m-left').textContent = left;
-  document.getElementById('book-bar').style.width = pct+'%';
-  document.getElementById('pb-read').textContent = state.currentPage+' sayfa okundu';
-  document.getElementById('pb-pct').textContent = pct+'%';
-
-  document.getElementById('goal-note').style.display = 'none';
-
-  // Log
-  const elapsed = periodsBetween(state.startPeriod, date);
-  const allPeriods = elapsed>0 ? periodRange(state.startPeriod, date) : [date];
-  const pastPeriods = allPeriods.slice(0,-1);
-  const loggedKeys = new Set(state.log.map(e=>e.date));
-  const missed = pastPeriods.filter(p=>!loggedKeys.has(p));
-  const allEntries = [
-    ...state.log.map(e=>({...e,missed:false})),
-    ...missed.map(p=>({date:p,missed:true}))
-  ].sort((a,b)=>b.date.localeCompare(a.date));
-
-  const logEl = document.getElementById('day-log');
-  if (!allEntries.length) { logEl.innerHTML='<div class="empty-log">Henüz kayıt yok.</div>'; }
-  else {
-    logEl.innerHTML = allEntries.map(e => {
-      const lbl = formatPeriodLabel(e.date);
-      if (e.missed) return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="color:var(--muted);font-size:12px;">kayıt yok</span><span class="badge badge-skip">Atlandı</span></div>`;
-      const badge = e.exceeded ? '<span class="badge badge-great">Harika</span>'
-        : e.hitGoal ? '<span class="badge badge-ok">Tamam</span>'
-        : '<span class="badge badge-miss">Eksik</span>';
-      return `<div class="log-entry"><span class="log-date">${lbl}</span><span style="font-weight:500;">${e.page}. sayfa</span>${badge}</div>`;
-    }).join('');
-  }
-
-  drawChart();
-  renderFinish();
-}
-
-function drawChart() {
-  const canvas = document.getElementById('progress-chart');
-  if (!canvas||!state.startPeriod) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth||320;
-  canvas.width=W*window.devicePixelRatio; canvas.height=200*window.devicePixelRatio;
-  canvas.style.width=W+'px'; canvas.style.height='200px';
-  ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
-  const pad={top:12,right:12,bottom:28,left:38};
-  const cw=W-pad.left-pad.right; const ch=200-pad.top-pad.bottom;
-  const elapsed=periodsBetween(state.startPeriod,getDate());
-  const totalPeriods=Math.ceil((state.totalPages-state.baseStartPage)/state.baseGoal);
-  const maxX=Math.max(totalPeriods,elapsed+1); const maxY=state.totalPages;
-  const toX=x=>pad.left+(x/maxX)*cw;
-  const toY=y=>pad.top+ch-(y/maxY)*ch;
-  const isDark=document.body.classList.contains('dark');
-  const gridColor=isDark?'rgba(200,190,180,0.1)':'rgba(120,110,100,0.12)';
-  const labelColor=isDark?'#8a8680':'#7a746e';
-
-  ctx.strokeStyle=gridColor; ctx.lineWidth=0.5;
-  for (let i=0;i<=4;i++) {
-    const y=pad.top+(ch/4)*i;
-    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cw,y); ctx.stroke();
-    ctx.fillStyle=labelColor; ctx.font='10px -apple-system'; ctx.textAlign='right';
-    ctx.fillText(Math.round(maxY-(maxY/4)*i),pad.left-4,y+3);
-  }
-
-  // Planlanan çizgi (baseGoal, kümülatif)
-  ctx.beginPath(); ctx.strokeStyle='#4a8c5c'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
-  for (let i=0;i<=totalPeriods;i++) { const x=toX(i),y=toY(plannedPage(i)); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
-  ctx.stroke(); ctx.setLineDash([]);
-
-  // Gerçekleşen
-  const sortedLog=[...state.log].sort((a,b)=>a.date.localeCompare(b.date));
-  if (sortedLog.length>0) {
-    const pts=[{x:0,y:state.baseStartPage},...sortedLog.map(e=>({x:periodsBetween(state.startPeriod,e.date)+1,y:e.page}))];
-    ctx.beginPath(); ctx.strokeStyle='#2a4a8a'; ctx.lineWidth=2;
-    pts.forEach((p,i)=>{ const x=toX(Math.min(p.x,maxX)),y=toY(p.y); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-    ctx.stroke();
-    pts.slice(1).forEach(p=>{ ctx.beginPath(); ctx.arc(toX(Math.min(p.x,maxX)),toY(p.y),4,0,Math.PI*2); ctx.fillStyle='#2a4a8a'; ctx.fill(); });
-  }
-
-  ctx.fillStyle=labelColor; ctx.font='10px -apple-system'; ctx.textAlign='center';
-  const step=Math.max(1,Math.ceil(maxX/5));
-  for (let i=0;i<=maxX;i+=step) ctx.fillText(i,toX(i),pad.top+ch+16);
-}
-
-function renderFinish() {
-  const el = document.getElementById('finish-info');
-  if (!el||!state.startPeriod) return;
-  const ms=getMsPerPeriod();
-  const totalPeriods=Math.ceil((state.totalPages-state.baseStartPage)/state.baseGoal);
-  const planFinish=new Date(keyToDate(state.startPeriod).getTime()+totalPeriods*ms);
-  const opts={day:'numeric',month:'long',year:'numeric'};
-  let html=`<span style="color:var(--text);font-weight:500;">Planlanan:</span> ${planFinish.toLocaleString('tr-TR',opts)}`;
-  const elapsed=periodsBetween(state.startPeriod,getDate());
-  const pagesRead=state.currentPage-state.baseStartPage;
-  const pagesLeft=state.totalPages-state.currentPage;
-  if (elapsed>0&&pagesRead>0) {
-    const avg=pagesRead/elapsed;
-    const periodsLeft=Math.ceil(pagesLeft/avg);
-    const actual=new Date(Date.now()+periodsLeft*ms);
-    html+=`<br><span style="color:var(--text);font-weight:500;">Mevcut hıza göre:</span> ${actual.toLocaleString('tr-TR',opts)}`;
-    html+=`<br><span style="color:var(--muted);font-size:12px;">Ortalama ${avg.toFixed(1)} sayfa/periyot</span>`;
-  } else {
-    html+=`<br><span style="color:var(--muted);font-size:13px;">Gerçekleşen hız için daha fazla kayıt gerekli.</span>`;
-  }
-  el.innerHTML=html;
-}
-
-function resetAll() {
-  if (!confirm('Tüm verileri silmek istiyor musun?')) return;
-  localStorage.removeItem('okuma_v7');
-  state={totalPages:0,baseGoal:0,currentPage:0,baseStartPage:0,startPeriod:'',periodMode:'day',nextPeriodTarget:0,currentTarget:0,periodGoalOverride:null,log:[]};
-  document.getElementById('setup-section').style.display='block';
-  document.getElementById('tracker-section').style.display='none';
-}
-
-function updateClock() {
+document.getElementById('open-settings').addEventListener('click',()=>showScreen(true));
+document.getElementById('create-first-plan').addEventListener('click',()=>showScreen(true));
+document.getElementById('back-home').addEventListener('click',()=>showScreen(false));
+document.getElementById('chart-back').addEventListener('click',()=>showScreen(false));
+document.getElementById('open-chart').addEventListener('click',()=>{
+  document.getElementById('home-screen').hidden=true;
+  document.getElementById('settings-screen').hidden=true;
+  document.getElementById('chart-screen').hidden=false;
+  renderChart();window.scrollTo(0,0);document.getElementById('chart-title').focus({preventScroll:true});
+});
+function updateClock(){
   const now=new Date();
-  const de=document.getElementById('clock-date'); const te=document.getElementById('clock-time');
-  if (!de||!te) return;
-  de.textContent=now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
-  te.textContent=now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clock-date').textContent=now.toLocaleDateString('tr-TR',{day:'numeric',month:'long',weekday:'long'});
+  document.getElementById('clock-time').textContent=now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
 }
-
-let lastPeriod=getPeriodKey(new Date());
-setInterval(()=>{ const cur=getPeriodKey(new Date()); if(cur!==lastPeriod){lastPeriod=cur; if(state.totalPages>0)render();} },10000);
-setInterval(updateClock,1000);
+function dashboardValues(p,now){
+  if(!p)return {current:0,target:0,left:0,percent:0};
+  const current=Math.min(p.total,p.start-1+new Set(p.done).size);
+  const target=p.total;
+  return {current,target,left:Math.max(0,target-current),percent:Math.min(100,Math.round(current/p.total*100))};
+}
+function cumulativeTarget(p,now){return p?plannedAt(p,dateKey(now)):0;}
+// Her revizyon kendi başlangıç noktasını ve hedefini saklar.
+function initialRevision(p){return {from:p.firstDate,daily:p.daily,base:p.start-1,firstTarget:Math.min(p.total,p.start-1+p.daily),total:p.total};}
+function revisionsOf(p){return p.revisions?.length?p.revisions:[initialRevision(p)];}
+function revisionAt(p,date){let active=revisionsOf(p)[0];for(const r of revisionsOf(p)){if(r.from<=date)active=r;else break;}return active;}
+function plannedAt(p,date){
+  const r=revisionAt(p,date),offset=dayNumber(date)-dayNumber(r.from);
+  return offset<0?r.base:Math.min(r.total,r.firstTarget+offset*r.daily);
+}
+function revisionFinish(r){return dayKey(dayNumber(r.from)+Math.ceil(Math.max(0,r.total-r.firstTarget)/r.daily));}
+function revisedPlan(p,values,today){
+  const next={...p,name:values.name,total:values.total,daily:values.daily,revisions:revisionsOf(p).map(r=>({...r}))};
+  if(values.daily===p.daily&&values.total===p.total)return next;
+  const current=p.start-1+new Set(p.done).size;
+  const todayRead=Object.values(p.doneAt||{}).filter(d=>d===today).length;
+  const from=today<p.firstDate?p.firstDate:today;
+  const r={from,daily:values.daily,base:current,firstTarget:Math.min(values.total,current+Math.max(0,values.daily-(from===today?todayRead:0))),total:values.total};
+  next.revisions=next.revisions.filter(old=>old.from<from);next.revisions.push(r);
+  return next;
+}
+function calendarDays(p){
+  const r=revisionsOf(p).at(-1),days=[];
+  let page=r.base+1,offset=0;
+  while(page<=p.total){
+    const target=offset===0?r.firstTarget:Math.min(p.total,r.firstTarget+offset*r.daily);
+    const pages=[];while(page<=target){pages.push(page);page++;}
+    if(pages.length)days.push({date:dayKey(dayNumber(r.from)+offset),pages});
+    offset++;
+  }
+  return days;
+}
+function formValues(){return {name:bookName.value.trim(),total:Number(totalPages.value),daily:Number(dailyPages.value),start:Number(startPage.value),firstDate:startDate.value};}
+function formChanged(v,p){return !p||v.name!==p.name||v.total!==p.total||v.daily!==p.daily;}
+function updatePlanButton(){
+  const v=formValues();
+  const current=plan?plan.start-1+new Set(plan.done).size:0;
+  const valid=!!v.name&&fields.every(f=>f.validity.valid)&&v.start<=v.total&&v.total>=current;
+  document.getElementById('build-plan').disabled=!(valid&&formChanged(v,plan));
+  startPage.readOnly=!!plan;startDate.readOnly=!!plan;
+}
+function updateDashboard(){
+  const v=dashboardValues(plan,new Date());
+  document.getElementById('daily-badge').textContent=plan?plan.daily+' sayfa':'Hedef belirle';
+  document.getElementById('current-page').textContent=plan?v.current+'.':'—';
+  document.getElementById('target-page').textContent=plan?v.target+'.':'—';
+  document.getElementById('remaining-pages').textContent=plan?v.left:'—';
+  document.getElementById('progress-read').textContent=v.current+' sayfa okundu';
+  document.getElementById('progress-percent').textContent=v.percent+'%';
+  document.getElementById('progress-fill').style.width=(plan?v.current/plan.total*100:0)+'%';
+  const goal=cumulativeTarget(plan,new Date());
+  const goalPercent=plan?goal/plan.total*100:0;
+  document.getElementById('planned-fill').style.width=goalPercent+'%';
+  const marker=document.getElementById('planned-marker');
+  marker.hidden=!plan;marker.style.left='clamp(0px, calc('+goalPercent+'% - 2px), calc(100% - 4px))';
+  marker.title='Bugün sonuna kadar hedef: '+goal+' sayfa';
+  document.getElementById('plan-caption').hidden=!plan;
+  document.getElementById('planned-label').textContent='Mavi işaret · Bugün sonu hedefi: '+goal+' sayfa';
+  const delta=v.current-goal,difference=document.getElementById('plan-difference');
+  difference.textContent=delta>0?delta+' sayfa ileridesin':delta<0?(-delta)+' sayfa geridesin':'Planla aynı seviyedesin';
+  difference.className=delta>0?'ahead':delta<0?'behind':'';
+  document.getElementById('progress-track').setAttribute('aria-valuetext',v.current+' sayfa okundu; bugünün kümülatif hedefi '+goal+' sayfa');
+  document.getElementById('progress-track').setAttribute('aria-valuenow',v.percent);
+}
+function applyTheme(theme){
+  document.documentElement.dataset.theme=theme;
+  const button=document.getElementById('theme-toggle');
+  button.textContent=theme==='dark'?'☀️':'🌙';
+  button.title=theme==='dark'?'Açık temaya geç':'Koyu temaya geç';
+  button.setAttribute('aria-label',button.title);
+}
+try{applyTheme(localStorage.getItem('reading_theme')==='light'?'light':'dark');}catch(e){applyTheme('dark');}
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(theme);
+  try{localStorage.setItem('reading_theme',theme);}catch(e){}
+});
 updateClock();
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&state.totalPages>0)render(); });
-window.addEventListener('focus',()=>{ if(state.totalPages>0)render(); });
-
-load();
-document.body.classList.toggle('dark',darkMode);
-document.getElementById('dark-tog').textContent=darkMode?'☀️':'🌙';
-if (state.totalPages>0) {
-  document.getElementById('setup-section').style.display='none';
-  document.getElementById('tracker-section').style.display='block';
-  render();
+let lastDate=dateKey(new Date());
+setInterval(()=>{updateClock();const next=dateKey(new Date());if(next!==lastDate){lastDate=next;render();}},1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateClock();render();}});
+function closeReset(){
+  document.getElementById('reset-overlay').hidden=true;
+  document.querySelector('main').inert=false;
+  document.getElementById('reset-reading').focus();
 }
+document.getElementById('reset-reading').addEventListener('click',()=>{
+  if(!plan)return;
+  document.getElementById('reset-overlay').hidden=false;
+  document.querySelector('main').inert=true;
+  document.getElementById('cancel-reset').focus();
+});
+document.getElementById('cancel-reset').addEventListener('click',closeReset);
+document.getElementById('reset-overlay').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)closeReset();
+});
+document.getElementById('reset-overlay').addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();closeReset();}
+  if(e.key==='Tab'){
+    const first=document.getElementById('cancel-reset'),last=document.getElementById('confirm-reset');
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
+document.getElementById('confirm-reset').addEventListener('click',()=>{
+  if(!plan){closeReset();return;}
+  // Yeni nesne, devam eden swipe animasyonunun eski kaydı geri yazmasını engeller.
+  plan={...plan,done:[],doneAt:{},legacyCount:0,trackingSince:dateKey(new Date())};
+  plan.revisions=[initialRevision(plan)];
+  persist();closeReset();render();showScreen(false);
+  document.getElementById('export-status').textContent='Okuma sıfırlandı. Takvim seçtiğin başlangıç tarihinden, başlangıç sayfanla başlıyor.';
+});
+function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function makeDays(total,daily,start,firstDate){
+  const days=[];
+  for(let p=start,i=0;p<=total;p+=daily,i++){
+    const date=new Date(firstDate+'T12:00:00');date.setDate(date.getDate()+i);
+    const pages=Array.from({length:Math.min(daily,total-p+1)},(_,j)=>p+j);
+    days.push({date:dateKey(date),pages});
+  }
+  return days;
+}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({draft:fields.map(f=>f.value),plan}));}catch(e){document.getElementById('error').textContent='Tarayıcı kayıt izni vermedi; değişiklikler yalnızca bu oturumda tutulacak.';}}
+try{
+  const saved=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(saved){fields.forEach((f,i)=>f.value=saved.draft?.[i]??f.value);plan=saved.plan;if(!saved.draft?.[4])startDate.value=plan?.firstDate||dateKey(new Date());}
+  else{
+    const old=JSON.parse(localStorage.getItem('reading_book_info')||'{}');
+    bookName.value=old.name||'';totalPages.value=old.pages||'';
+  }
+}catch(e){}
+if(plan){
+  if(!plan.revisions)plan.revisions=[initialRevision(plan)];
+  startPage.value=plan.start;startDate.value=plan.firstDate;
+}
+fields.forEach(f=>{const update=()=>{startPage.setCustomValidity('');updatePlanButton();persist();};f.addEventListener('input',update);f.addEventListener('change',update);});
+document.getElementById('book-form').addEventListener('submit',e=>{
+  e.preventDefault();updatePlanButton();
+  if(document.getElementById('build-plan').disabled)return;
+  const v=formValues(),today=dateKey(new Date());
+  document.getElementById('error').textContent='';
+  if(plan){plan=revisedPlan(plan,v,today);}
+  else{
+    plan={...v,done:[],doneAt:{},trackingSince:today,legacyCount:0};
+    plan.revisions=[initialRevision(plan)];
+  }
+  persist();render();showScreen(false);
+});
+function label(key){return new Date(key+'T12:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric',weekday:'long'});}
+function render(){
+  updatePlanButton();
+  updateDashboard();
+  document.getElementById('share-csv').disabled=!plan;
+  document.getElementById('reset-reading').disabled=!plan;
+  if(!document.getElementById('chart-screen').hidden)renderChart();
+  const list=document.getElementById('card-list'),summary=document.getElementById('summary');
+  list.replaceChildren();
+  document.getElementById('empty-state').hidden=!!plan;
+  if(!plan){summary.textContent='';return;}
+  const days=calendarDays(plan);
+  const done=new Set(plan.done);
+  summary.textContent=`${plan.name} · ${days.length} gün · ${plan.total-plan.start+1} sayfa · Bitiş: ${label(revisionFinish(revisionsOf(plan).at(-1)))} · Tamamlanan: ${done.size} sayfa`;
+  for(const day of days){
+    if(day.pages.every(page=>done.has(page)))continue;
+    const section=document.createElement('section');
+    const heading=document.createElement('h2');heading.className='day-title';
+    heading.textContent=(day.date===dateKey(new Date())?'Bugün · ':'')+label(day.date);
+    const count=document.createElement('small');count.textContent=`${day.pages.length} sayfa · ${day.pages.filter(p=>done.has(p)).length} tamamlandı`;
+    heading.append(count);section.append(heading);
+    for(const page of day.pages){
+      if(done.has(page))continue;
+      const wrap=document.createElement('div');wrap.className='item-wrap'+(done.has(page)?' done':'');
+      wrap.innerHTML=`<div class="hint-bg hint-done"><span class="hint-icon">✓</span></div><div class="item" data-page="${page}"><div class="push-num">${page}</div><div class="push-body"><span class="page-label">Sayfa</span></div><div class="swipe-arrow">${done.has(page)?'✓':'›'}</div></div>`;
+      section.append(wrap);
+    }
+    list.append(section);
+  }
+  attachSwipe();
+}
+function attachSwipe(){
+  const el=document.querySelector('.item-wrap:not(.done) .item');const wrap=el?.closest('.item-wrap');
+  if(!el||!wrap)return;
+  const hintEl=wrap.querySelector('.hint-done');
+  let sx=0,sy=0,cx=0,on=false,locked=false;
+  function start(x,y){if(el.dataset.busy)return;sx=x;sy=y;cx=0;on=true;locked=false;el.style.transition='none';}
+  function move(x,y){if(!on)return;const dx=x-sx,dy=y-sy;if(!locked){if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){on=false;return;}if(Math.abs(dx)>8)locked=true;else return;}if(dx<0){cx=0;el.style.transform='translateX(0)';if(hintEl)hintEl.style.opacity=0;return;}cx=dx;el.style.transform=`translateX(${dx}px)`;if(hintEl)hintEl.style.opacity=Math.min(1,dx/90);}
+  function end(){if(!on&&!locked)return;on=false;if(cx>90)completePushup(el);else{el.style.transition='transform 0.25s cubic-bezier(0.4,0,0.2,1)';el.style.transform='translateX(0)';if(hintEl)hintEl.style.opacity=0;}}
+  el.addEventListener('touchstart',e=>{const t=e.touches[0];start(t.clientX,t.clientY);},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!on)return;const t=e.touches[0];move(t.clientX,t.clientY);},{passive:true});
+  el.addEventListener('touchend',end);
+  el.addEventListener('touchcancel',()=>{cx=0;end();});
+  el.addEventListener('mousedown',e=>{start(e.clientX,e.clientY);function mm(e2){move(e2.clientX,e2.clientY);}function mu(){end();window.removeEventListener('mousemove',mm);window.removeEventListener('mouseup',mu);}window.addEventListener('mousemove',mm);window.addEventListener('mouseup',mu);});
+}
+
+
+
+function completePushup(el){
+  if(el.dataset.busy)return;
+  el.dataset.busy='1';
+  const currentPlan=plan;
+  const wrap=el.closest('.item-wrap');
+  wrap.style.maxHeight=wrap.offsetHeight+'px';
+  wrap.style.transition='max-height 0.2s ease,margin-bottom 0.2s ease';
+  el.style.transition='transform 0.32s ease,opacity 0.32s';
+  el.style.transform='translateX(450px)';el.style.opacity='0';
+  setTimeout(()=>{wrap.style.maxHeight='0';wrap.style.marginBottom='0';},320);
+  setTimeout(()=>{
+    if(plan!==currentPlan)return;
+    const page=Number(el.dataset.page);
+    if(!plan.done.includes(page)){plan.done.push(page);plan.doneAt[page]=dateKey(new Date());}
+    persist();render();
+  },560);
+}
+// Önceki sürümlerde kayıt tarihi yoktu; geçmiş günlere okuma atamayız.
+if(plan && !plan.doneAt){
+  plan.doneAt={};plan.legacyCount=plan.done.length;
+  plan.trackingSince=dateKey(new Date());persist();
+}
+function dayNumber(key){const [y,m,d]=key.split('-').map(Number);return Date.UTC(y,m-1,d)/86400000;}
+function dayKey(n){return new Date(n*86400000).toISOString().slice(0,10);}
+function chartSeries(p,today){
+  const first=dayNumber(p.firstDate),now=dayNumber(today);
+  const last=dayNumber(revisionFinish(revisionsOf(p).at(-1)));
+  const end=Math.max(last,now),rows=[];
+  const legacy=p.legacyCount||0,tracking=dayNumber(p.trackingSince||p.firstDate);
+  const counts={};Object.values(p.doneAt||{}).forEach(d=>{counts[d]=(counts[d]||0)+1;});
+  let actual=p.start-1+legacy;
+  const earliest=first;
+  Object.entries(counts).forEach(([date,count])=>{if(dayNumber(date)<first)actual+=count;});
+  for(let n=earliest;n<=end;n++){
+    const date=dayKey(n);actual+=counts[date]||0;
+    const known=legacy>0?n>=tracking:n>=earliest;
+    rows.push({date,planned:plannedAt(p,date),actual:n<=now&&known?Math.min(p.total,actual):null});
+  }
+  return rows;
+}
+let chartRows=[];
+function renderChart(){
+  const svg=document.getElementById('reading-chart');svg.replaceChildren();
+  document.getElementById('chart-card').hidden=!plan;
+  document.getElementById('chart-book').textContent=plan?plan.name:'Önce takvim ayarlarından bir okuma takvimi oluştur.';
+  document.getElementById('chart-note').textContent='';if(!plan)return;
+  chartRows=chartSeries(plan,dateKey(new Date()));
+  const ns='http://www.w3.org/2000/svg';
+  function add(tag,attrs,text){const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;svg.append(el);return el;}
+  const yMax=Math.max(plan.total,...chartRows.map(r=>r.planned));
+  const x=i=>56+i/Math.max(1,chartRows.length-1)*406,y=v=>282-v/yMax*246;
+  for(let i=0;i<=4;i++){
+    const value=Math.round(yMax*i/4),py=y(value);
+    add('line',{x1:56,x2:462,y1:py,y2:py,stroke:'var(--border)'});
+    add('text',{x:47,y:py+4,'text-anchor':'end',fill:'var(--text2)','font-size':12},value);
+  }
+  add('text',{x:56,y:18,fill:'var(--text2)','font-size':12},'Okunan sayfa');
+  add('text',{x:462,y:334,'text-anchor':'end',fill:'var(--text2)','font-size':12},'Tarih');
+  const ticks=new Set(Array.from({length:4},(_,i)=>Math.round(i*(chartRows.length-1)/3)));
+  for(const i of ticks)add('text',{x:x(i),y:308,'text-anchor':i===0?'start':i===chartRows.length-1?'end':'middle',fill:'var(--text2)','font-size':12},new Date(chartRows[i].date+'T12:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'short'}));
+  for(const [key,color,dash] of [['planned','var(--green)','6 4'],['actual','#60a5fa','']]){
+    let path='',open=false;
+    chartRows.forEach((r,i)=>{if(r[key]===null){open=false;return;}path+=(open?' L':' M')+x(i)+' '+y(r[key]);open=true;});
+    add('path',{d:path,fill:'none',stroke:color,'stroke-width':3,'stroke-dasharray':dash,'stroke-linejoin':'round'});
+    const points=chartRows.map((r,i)=>({r,i})).filter(o=>o.r[key]!==null);
+    if(points.length){const {r,i}=points[points.length-1];add('circle',{cx:x(i),cy:y(r[key]),r:4,fill:color});}
+  }
+  for(const rev of revisionsOf(plan).slice(1)){
+    const i=chartRows.findIndex(r=>r.date===rev.from);if(i<0)continue;
+    const line=add('line',{x1:x(i),x2:x(i),y1:30,y2:282,stroke:'var(--text2)','stroke-dasharray':'2 4'});
+    const title=document.createElementNS(ns,'title');title.textContent=label(rev.from)+' — hedef '+rev.daily+' sayfa/gün olarak revize edildi';line.append(title);
+  }
+  const input=document.getElementById('chart-date');input.min=chartRows[0].date;input.max=chartRows.at(-1).date;
+  if(!input.value||input.value<input.min||input.value>input.max)input.value=dateKey(new Date())<input.min?input.min:dateKey(new Date())>input.max?input.max:dateKey(new Date());
+  inspectChart();
+  document.getElementById('chart-note').textContent='Planlanan çizgi gün sonu hedeflerini gösterir. Hedef revizyonları bugünden itibaren uygulanır; önceki tarihlerdeki plan değerleri korunur. Dikey noktalı çizgiler revizyon tarihlerini gösterir. Gerçekleşen çizgi, kaydırılan sayfalarla güncellenir ve bugünde sona erer.'+(plan.legacyCount?' Önceki sürümde tamamlanan sayfaların tarihleri bilinmediği için gerçekleşen çizgi '+label(plan.trackingSince)+' tarihindeki mevcut toplamdan başlar.':'');
+}
+function inspectChart(){
+  const r=chartRows.find(r=>r.date===document.getElementById('chart-date').value);
+  document.getElementById('chart-values').textContent=r?'Planlanan: '+r.planned+' sayfa · Gerçekleşen: '+(r.actual===null?'Veri yok':r.actual+' sayfa'):'';
+}
+document.getElementById('chart-date').addEventListener('input',inspectChart);
+
+function csvCell(value){
+  let text=String(value??'');
+  if(/^[\s]*[=+@-]/.test(text)||/^[\t\r\n]/.test(text))text="'"+text;
+  return '"'+text.replace(/"/g,'""')+'"';
+}
+function makeCsv(p,today){
+  const current=Math.min(p.total,p.start-1+new Set(p.done).size);
+  const entries=Object.entries(p.doneAt||{});
+  const counts={};entries.forEach(([page,date])=>{counts[date]=(counts[date]||0)+1;});
+  const complete=current>=p.total;
+  const finished=complete&&entries.length?entries.map(e=>e[1]).sort().at(-1):'';
+  const header=['Kitap Adı','Toplam Sayfa','Başlanacak Sayfa','Günlük Hedef','Plan Başlangıcı','Dışa Aktarım Tarihi','Kitap Durumu','Son Kayıtlı Okuma Tarihi','Tarih','Planlanan Günlük Sayfa','Planlanan Kümülatif Sayfa','Gerçekleşen Günlük Sayfa','Gerçekleşen Kümülatif Sayfa','Güncel Okunan Sayfa','Kitapta Kalan Sayfa','Not'];
+  const rows=[header];
+  let prev=p.start-1;
+  for(const r of chartSeries(p,today)){
+    const plannedDaily=Math.max(0,r.planned-prev);prev=r.planned;
+    const legacyDay=(p.legacyCount||0)>0&&r.date<=p.trackingSince;
+    const daily=r.date>today||legacyDay?'':counts[r.date]||0;
+    const note=legacyDay?'Önceki sürümde okuma tarihleri kaydedilmedi; günlük toplam bilinmiyor.':r.date>today?'Gelecek tarih':'';
+    rows.push([p.name,p.total,p.start,revisionAt(p,r.date).daily,p.firstDate,today,complete?'Tamamlandı':'Devam ediyor',finished,r.date,plannedDaily,r.planned,daily,r.actual,current,p.total-current,note]);
+  }
+  return '\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+}
+function exportFile(){
+  const today=dateKey(new Date());
+  const name=(plan.name||'kitap').replace(/[<>:"/\\|?*\x00-\x1F]/g,'_').slice(0,70).trim()||'kitap';
+  return new File([makeCsv(plan,today)],name+'-okuma-'+today+'.csv',{type:'text/csv;charset=utf-8'});
+}
+const exportStatus=document.getElementById('export-status');
+document.getElementById('share-csv').addEventListener('click',async()=>{
+  if(!plan)return;
+  let file;
+  try{
+    file=exportFile();
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:plan.name+' — Okuma Kaydı'});
+      exportStatus.textContent='Paylaşım işlemi tamamlandı.';
+    }else{
+      exportStatus.textContent='Bu tarayıcı dosya paylaşımını desteklemiyor. CSV göndermek için uygulamayı telefonunda dosya paylaşımını destekleyen bir tarayıcıda aç.';
+    }
+  }catch(e){
+    exportStatus.textContent=e.name==='AbortError'?'Paylaşım iptal edildi.':'Paylaşım açılamadı. Dosya paylaşımını destekleyen bir tarayıcıda tekrar dene.';
+  }
+});
+render();
 </script>
 </body>
 </html>
